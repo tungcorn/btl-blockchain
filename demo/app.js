@@ -184,6 +184,13 @@ function switchModeTab(mode) {
   if (tabWeb3) tabWeb3.classList.toggle('active', !toSandbox);
 }
 
+function switchRightTab(tabName) {
+  const tabs = document.querySelectorAll('.right-tab-item');
+  const panes = document.querySelectorAll('.right-tab-pane');
+  tabs.forEach(tab => tab.classList.toggle('active', tab.dataset.tab === tabName));
+  panes.forEach(pane => pane.classList.toggle('active', pane.id === `pane-${tabName}`));
+}
+
 function setPledgeAmount(val) {
   const input = document.getElementById('pledgeInput');
   if (input) input.value = val;

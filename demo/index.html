@@ -3,12 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CrowdFund3 • Hợp Đồng Gọi Vốn Có Mục Tiêu &amp; Hạn Thời Gian</title>
+  <title>CrowdFund3 • Nền Tảng Gọi Vốn Thông Minh Đẳng Cấp</title>
   <meta name="description" content="Hợp đồng thông minh gọi vốn cộng đồng phi tập trung: mục tiêu vốn, hạn thời gian, mẫu CEI, khóa chống tái nhập và hoàn tiền Pull-over-Push.">
 
-  <!-- Be Vietnam Pro: bộ ký tự vietnamese có thật (Outfit KHÔNG có, nên toàn bộ
-       dấu tiếng Việt trước đây rơi về font hệ thống).
-       JetBrains Mono: dùng cho mọi con số và câu lệnh của hợp đồng. -->
+  <!-- Be Vietnam Pro: typography chuẩn tiếng Việt đĩnh đạc
+       JetBrains Mono: dùng cho số liệu, địa chỉ và câu lệnh logic -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -23,12 +22,12 @@
   <div class="app-layout">
 
     <!-- ═════════════════════════════════════════════════════════════
-         THANH ĐIỀU HƯỚNG — đảo nổi, tách khỏi mép trên
+         THANH ĐIỀU HƯỚNG CHÍNH (TOP NAVIGATION)
          ═════════════════════════════════════════════════════════════ -->
     <header class="top-nav">
       <div class="nav-brand">
         <div class="brand-badge" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M12 2 2 7l10 5 10-5-10-5Z"/>
             <path d="m2 17 10 5 10-5"/>
             <path d="m2 12 10 5 10-5"/>
@@ -36,22 +35,30 @@
         </div>
         <div>
           <div class="brand-title">CrowdFund3</div>
-          <div class="brand-spec">Solidity ^0.8.20 · CEI · Pull-over-Push</div>
+          <div class="brand-spec">Solidity ^0.8.20 · CEI Protocol</div>
         </div>
       </div>
 
-      <div class="nav-center-scenarios">
-        <span class="scenarios-label">Kịch bản</span>
-        <button class="btn-scenario success" onclick="runSuccessScenario()" title="Mô phỏng đạt 11/10 ETH, qua hạn 7 ngày, Chủ dự án rút vốn">
-          Đạt mục tiêu &amp; rút vốn
+      <!-- Chuyển chế độ: Mô phỏng Sandbox ↔ MetaMask on-chain -->
+      <nav class="mode-tabs">
+        <button id="tabBtnSandbox" class="tab-btn active" onclick="switchModeTab('sandbox')">
+          <span class="tab-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 3h6M10 3v6.5L5.5 17A2.4 2.4 0 0 0 7.6 21h8.8a2.4 2.4 0 0 0 2.1-4L14 9.5V3"/>
+            </svg>
+          </span>
+          <span>Mô phỏng Sandbox</span>
         </button>
-        <button class="btn-scenario fail" onclick="runFailScenario()" title="Mô phỏng chỉ đạt 3/10 ETH, qua hạn, Người ủng hộ hoàn tiền">
-          Không đạt &amp; hoàn tiền
+        <button id="tabBtnWeb3" class="tab-btn" onclick="switchModeTab('web3')">
+          <span class="tab-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 10.5 5 4l4.5 3h5L19 4l2 6.5-2.5 8.5h-13L3 10.5Z"/>
+              <path d="M9.5 13h5"/>
+            </svg>
+          </span>
+          <span>MetaMask On-chain</span>
         </button>
-        <button class="btn-scenario" onclick="resetCampaign()" title="Đặt lại về trạng thái ban đầu">
-          Đặt lại
-        </button>
-      </div>
+      </nav>
 
       <div class="nav-actions">
         <div class="network-indicator">
@@ -66,257 +73,210 @@
           <option value="charlie">Charlie · 0x8F3b…3678</option>
         </select>
 
-        <button id="btnThemeToggle" class="btn-theme-toggle" onclick="toggleTheme()" title="Phím tắt T — đổi chế độ trình chiếu">
+        <button id="btnThemeToggle" class="btn-theme-toggle" onclick="toggleTheme()" title="Phím tắt T — đổi chế độ sáng/tối">
           <span class="theme-icon" id="themeIcon" aria-hidden="true"></span>
-          <span id="themeLabel">Trình chiếu</span>
+          <span id="themeLabel">Giao diện tối</span>
         </button>
       </div>
     </header>
 
-    <!-- Chuyển chế độ: Sandbox mô phỏng  MetaMask on-chain -->
-    <nav class="mode-tabs-bar">
-      <div class="mode-tabs">
-        <button id="tabBtnSandbox" class="tab-btn active" data-short="Sandbox" onclick="switchModeTab('sandbox')">
-          <span class="tab-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M9 3h6M10 3v6.5L5.5 17A2.4 2.4 0 0 0 7.6 21h8.8a2.4 2.4 0 0 0 2.1-4L14 9.5V3"/>
-            </svg>
-          </span>
-          <span class="tab-text">Mô phỏng Sandbox</span>
-          <span class="tab-badge">Mặc định</span>
-        </button>
-        <button id="tabBtnWeb3" class="tab-btn" data-short="MetaMask" onclick="switchModeTab('web3')">
-          <span class="tab-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M3 10.5 5 4l4.5 3h5L19 4l2 6.5-2.5 8.5h-13L3 10.5Z"/>
-              <path d="M9.5 13h5"/>
-            </svg>
-          </span>
-          <span class="tab-text">MetaMask on-chain</span>
-        </button>
-      </div>
-    </nav>
-
     <!-- ══════════════════════════════════════════════════════════════
-         CH ĐỘ 1 — SANDBOX
+         CHẾ ĐỘ 1 — SANDBOX MÔ PHỎNG (PRODUCT-FIRST DASHBOARD)
          ══════════════════════════════════════════════════════════════ -->
     <main class="dashboard-grid" id="sandboxView">
 
-      <!-- ─────────── CỘT TRÁI ─────────── -->
+      <!-- ─────────── CỘT TRÁI: SẢN PHẨM & TƯƠNG TÁC CHÍNH ─────────── -->
       <section class="primary-column">
 
-        <div class="panel" style="--i:1">
-          <div class="panel-core">
+        <!-- THẺ HERO CHIẾN DỊCH (Clean Unified Campaign Hero) -->
+        <div class="campaign-hero-card">
+          <div class="hero-header-row">
+            <div>
+              <div class="campaign-subtag">Chiến dịch #001 · Hợp đồng thông minh</div>
+              <h1 class="campaign-title">Dự án Orbit</h1>
+            </div>
+            <div class="state-pill state-active" id="campaignStatusPill">
+              <span class="status-dot" aria-hidden="true"></span>
+              <span id="campaignStatusText">ĐANG MỞ</span>
+            </div>
+          </div>
 
-            <!-- Đầu chiến dịch: một nguồn sự thật duy nhất -->
-            <div class="campaign-header-row">
-              <div>
-                <div class="campaign-subtag">Chiến dịch #001</div>
-                <h1 class="campaign-title">Dự án Orbit</h1>
+          <p class="campaign-desc">
+            Trạm chuyển tiếp vệ tinh mã nguồn mở. Quỹ được khóa an toàn trong hợp đồng thông minh và
+            chỉ giải ngân khi thoả đồng thời: <b>đạt mục tiêu 10.00 ETH</b> và <b>hoàn tất hạn 7 ngày</b>.
+          </p>
+
+          <!-- HERO PROGRESS COMPONENT — Thanh tiến độ chuẩn sản phẩm thực tế -->
+          <div class="hero-progress-block">
+            <div class="progress-main-row">
+              <div class="progress-amount-group">
+                <span class="amount-current" id="goalCurrent">0.00 ETH</span>
+                <span class="amount-target">/ <span id="goalTarget">10.00 ETH</span> mục tiêu</span>
               </div>
-              <div class="state-pill state-active" id="campaignStatusPill">
-                <span class="status-dot" aria-hidden="true"></span>
-                <span id="campaignStatusText">ĐANG MỞ</span>
+              <div class="progress-badges">
+                <span class="cond-badge" id="condGoal">
+                  <span class="cond-icon" aria-hidden="true"></span>
+                  <span id="condGoalText">chưa thoả</span>
+                </span>
               </div>
             </div>
 
-            <p class="campaign-desc">
-              Trạm chuyển tiếp vệ tinh mã nguồn mở. Qu do hợp đồng thông minh giữ và chỉ
-              giải ngân khi thoả đồng thời hai điều kiện: <b>đạt mục tiêu 10.00 ETH</b> và
-              <b>đã qua hạn 7 ngày</b>.
-            </p>
-
-            <!-- ═══════════════════════════════════════════════════════
-                 THIT BỊ ĐẶC TRNG — hai bất biến của hợp đồng, vẽ ra
-                 đúng hai biểu thức mà contract thật sự tính.
-                 ═══════════════════════════════════════════════════════ -->
-            <div class="invariants">
-
-              <!-- Bất biến 1: vốn -->
-              <div class="invariant" id="invGoal" style="--accent: var(--s1); --accent-ink: var(--s1-ink)">
-                <div class="invariant-head">
-                  <span class="invariant-name">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                      <circle cx="12" cy="12" r="9"/><path d="M12 7v10M9.5 9.5h5M9.5 14.5h5"/>
-                    </svg>
-                    Điều kiện vốn
-                  </span>
-                  <span class="cond-badge" id="condGoal">
-                    <span class="cond-icon" aria-hidden="true"></span>
-                    <span id="condGoalText">chưa thoả</span>
-                  </span>
-                </div>
-
-                <div class="comparator">
-                  <div class="cmp-side">
-                    <span class="cmp-label">Đã góp</span>
-                    <span class="cmp-value" id="goalCurrent">0.00 ETH</span>
-                  </div>
-                  <span class="cmp-op" aria-hidden="true">≥</span>
-                  <div class="cmp-side">
-                    <span class="cmp-label">Mục tiêu</span>
-                    <span class="cmp-value" id="goalTarget">10.00 ETH</span>
-                  </div>
-                </div>
-
-                <div class="meter" role="img" aria-label="Tiến độ góp vốn so với mục tiêu">
-                  <div class="meter-fill" id="boltGoalFill" style="--p:0"></div>
-                </div>
-
-                <div class="contract-expr" id="exprGoal"></div>
-              </div>
-
-              <!-- Bất biến 2: thời gian -->
-              <div class="invariant" id="invTime" style="--accent: var(--s2); --accent-ink: var(--s2-ink)">
-                <div class="invariant-head">
-                  <span class="invariant-name">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                      <circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/>
-                    </svg>
-                    Điều kiện thời gian
-                  </span>
-                  <span class="cond-badge" id="condTime">
-                    <span class="cond-icon" aria-hidden="true"></span>
-                    <span id="condTimeText">chưa thoả</span>
-                  </span>
-                </div>
-
-                <div class="comparator">
-                  <div class="cmp-side">
-                    <span class="cmp-label">Đồng hồ chuỗi</span>
-                    <span class="cmp-value" id="timeCurrent">Ngày 0.0</span>
-                  </div>
-                  <span class="cmp-op" aria-hidden="true">≥</span>
-                  <div class="cmp-side">
-                    <span class="cmp-label">Hạn chót</span>
-                    <span class="cmp-value" id="timeTarget">Ngày 7.0</span>
-                  </div>
-                </div>
-
-                <div class="timeline-wrap">
-                  <!-- Vạch hạn chót đặt tại 70% dải 0–10 ngày; phần bên phải nó được
-                       tô rõ là "ngoài chiến dịch", nếu không người xem sẽ đọc 30%
-                       còn lại thành thời gian vẫn còn được góp vốn. -->
-                  <div class="meter">
-                    <!-- Vùng sau hạn nằm TRƯỚC thanh đầy trong DOM, nên khi thời gian
-                         đã trôi qua mốc 7 ngày thì thanh đầy phủ lên nó — đúng nghĩa
-                         "phần này đã trôi qua rồi". -->
-                    <div class="past-zone" style="width:30%" aria-hidden="true"></div>
-                    <div class="meter-fill" id="boltTimeFill" style="--p:0"></div>
-                  </div>
-                  <div class="deadline-flag" style="left:70%">
-                    <span>Hạn chót · Ngày 7</span>
-                  </div>
-                  <input type="range" id="timeSlider" class="timeline-range" min="0" max="10" step="0.1" value="0"
-                         oninput="handleTimeSlider(this.value)" aria-label="Tua thời gian mô phỏng theo ngày">
-                </div>
-
-                <div class="timeline-scale" aria-hidden="true">
-                  <span>0d</span><span>2.5d</span><span>5d</span><span>7d</span><span>10d</span>
-                </div>
-
-                <div class="milestones-row">
-                  <span class="milestone-tip">Tua nhanh</span>
-                  <button class="btn-time-jump" onclick="setTimeByDays(0)">Bắt đầu</button>
-                  <button class="btn-time-jump" onclick="setTimeByDays(3.5)">3.5d</button>
-                  <button class="btn-time-jump" onclick="setTimeByDays(6.9)">Sát hạn · 6.9d</button>
-                  <button class="btn-time-jump is-deadline" onclick="setTimeByDays(7.1)">Vừa hết hạn · 7.1d</button>
-                </div>
-
-                <div class="contract-expr" id="exprTime"></div>
-              </div>
-
+            <!-- Thanh đo tiến độ mượt mà -->
+            <div class="hero-meter-track" role="progressbar" aria-label="Tiến độ vốn">
+              <div class="hero-meter-fill" id="boltGoalFill" style="--p:0"></div>
             </div>
 
-            <!-- Dải số liệu -->
-            <div class="metrics-strip">
-              <div class="metric-cell">
-                <span class="cell-label">Người đã góp</span>
-                <span class="cell-val" id="displayBackersCount">0</span>
+            <!-- Dòng thông tin thời hạn tinh gọn -->
+            <div class="progress-meta-row">
+              <div class="time-meta-item">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mini-icon" aria-hidden="true">
+                  <circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/>
+                </svg>
+                <span>Thời hạn hợp đồng:</span>
+                <b id="timeCurrent">Ngày 0.0</b> / <span id="timeTarget">Ngày 7.0</span>
               </div>
-              <div class="metric-cell">
-                <span class="cell-label">Quỹ trong hợp đồng</span>
-                <span class="cell-val text-s1" id="contractEscrowBalance">0.00 ETH</span>
-              </div>
-              <div class="metric-cell">
-                <span class="cell-label">Bạn đã góp</span>
-                <span class="cell-val" id="myCurrentPledge">0.00 ETH</span>
-              </div>
-              <div class="metric-cell">
-                <span class="cell-label">Số dư ví</span>
-                <span class="cell-val" id="activeWalletBalance">12.50 ETH</span>
-              </div>
+              <span class="cond-badge" id="condTime">
+                <span class="cond-icon" aria-hidden="true"></span>
+                <span id="condTimeText">chưa thoả</span>
+              </span>
             </div>
 
-            <!-- Khu hành động -->
-            <div class="action-cockpit">
+            <!-- Cụm kiểm tra kỹ thuật thu gọn (Progressive Disclosure) -->
+            <details class="contract-spec-drawer">
+              <summary class="spec-summary-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="summary-arrow" aria-hidden="true">
+                  <path d="m6 9 6 6 6-6"/>
+                </svg>
+                <span>Kiểm tra logic on-chain (Smart Contract Invariants)</span>
+              </summary>
+              <div class="spec-content-body">
+                <div class="spec-item" id="invGoal">
+                  <span class="spec-tag">Bất biến vốn:</span>
+                  <div class="contract-expr" id="exprGoal"></div>
+                </div>
+                <div class="spec-item" id="invTime">
+                  <span class="spec-tag">Bất biến thời gian:</span>
+                  <div class="contract-expr" id="exprTime"></div>
+                </div>
+              </div>
+            </details>
+          </div>
 
-              <div class="action-pod">
+          <!-- DẢI 4 SỐ LIỆU TỔNG QUAN -->
+          <div class="metrics-strip">
+            <div class="metric-cell">
+              <span class="cell-label">Quỹ trong hợp đồng</span>
+              <span class="cell-val text-accent" id="contractEscrowBalance">0.00 ETH</span>
+            </div>
+            <div class="metric-cell">
+              <span class="cell-label">Người đã góp</span>
+              <span class="cell-val" id="displayBackersCount">0</span>
+            </div>
+            <div class="metric-cell">
+              <span class="cell-label">Bạn đã góp</span>
+              <span class="cell-val" id="myCurrentPledge">0.00 ETH</span>
+            </div>
+            <div class="metric-cell">
+              <span class="cell-label">Số dư ví của bạn</span>
+              <span class="cell-val" id="activeWalletBalance">12.50 ETH</span>
+            </div>
+          </div>
+
+          <!-- KHU VỰC THAO TÁC HÀNH ĐỘNG (ACTION COCKPIT) -->
+          <div class="action-cockpit">
+            
+            <!-- Pod 1: Đóng góp vốn -->
+            <div class="action-pod">
+              <div class="pod-header">
                 <span class="pod-title">1 · Đóng góp vốn</span>
+                <span class="pod-sub">Ủng hộ chiến dịch bằng ETH</span>
+              </div>
 
-                <div class="pledge-input-row">
+              <div class="pledge-input-row">
+                <div class="input-currency-wrapper">
                   <input type="number" id="pledgeInput" min="0.5" step="0.5" value="1.0"
                          class="clean-num-input" aria-label="Số ETH muốn đóng góp">
-                  <div class="preset-buttons">
-                    <button class="btn-preset" onclick="setPledgeAmount(0.5)">0.5</button>
-                    <button class="btn-preset" onclick="setPledgeAmount(1.0)">1.0</button>
-                    <button class="btn-preset" onclick="setPledgeAmount(3.0)">3.0</button>
-                    <button class="btn-preset" onclick="setPledgeAmount(4.0)">4.0</button>
-                  </div>
+                  <span class="input-currency-unit">ETH</span>
                 </div>
+                <div class="preset-chips">
+                  <button type="button" class="btn-chip" onclick="setPledgeAmount(0.5)">0.5</button>
+                  <button type="button" class="btn-chip" onclick="setPledgeAmount(1.0)">1.0</button>
+                  <button type="button" class="btn-chip" onclick="setPledgeAmount(3.0)">3.0</button>
+                  <button type="button" class="btn-chip" onclick="setPledgeAmount(4.0)">4.0</button>
+                </div>
+              </div>
 
-                <div class="pod-action-buttons">
-                  <button id="btnPledge" class="btn btn-primary" onclick="handlePledge()">
-                    Đóng góp ETH
-                    <span class="icon-pod" aria-hidden="true">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M12 19V5M5 12l7-7 7 7"/>
-                      </svg>
-                    </span>
+              <div class="pod-btn-group">
+                <button id="btnPledge" class="btn btn-primary" onclick="handlePledge()">
+                  Đóng góp ETH
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon" aria-hidden="true">
+                    <path d="M12 19V5M5 12l7-7 7 7"/>
+                  </svg>
+                </button>
+                <button id="btnUnpledge" class="btn btn-secondary" onclick="handleUnpledge()">Rút cọc</button>
+              </div>
+            </div>
+
+            <!-- Pod 2: Kết toán hợp đồng -->
+            <div class="action-pod">
+              <div class="pod-header">
+                <span class="pod-title">2 · Kết toán quỹ</span>
+                <span class="pod-sub">Rút vốn hoặc hoàn tiền tự động</span>
+              </div>
+
+              <div class="settlement-stack">
+                <div class="settlement-action">
+                  <button id="btnClaim" class="btn btn-claim" disabled onclick="handleClaim()">
+                    Rút vốn về Chủ dự án
                   </button>
-                  <button id="btnUnpledge" class="btn btn-secondary" onclick="handleUnpledge()">Rút cọc</button>
+                  <div class="condition-hint" id="claimConditionHint">Cần qua hạn 7 ngày và đạt đủ 10 ETH.</div>
+                </div>
+
+                <div class="settlement-action">
+                  <button id="btnRefund" class="btn btn-refund" disabled onclick="handleRefund()">
+                    Hoàn tiền cho người góp
+                  </button>
+                  <div class="condition-hint" id="refundConditionHint">Mở khi hết hạn mà không đạt mục tiêu.</div>
                 </div>
               </div>
-
-              <div class="action-pod">
-                <span class="pod-title">2 · Kết toán</span>
-
-                <div class="settlement-stack">
-                  <div class="action-item">
-                    <button id="btnClaim" class="btn btn-claim" disabled onclick="handleClaim()">
-                      Rút vốn về Chủ dự án
-                    </button>
-                    <div class="condition-hint" id="claimConditionHint">Cần qua hạn 7 ngày và đạt đủ 10 ETH.</div>
-                  </div>
-
-                  <div class="action-item">
-                    <button id="btnRefund" class="btn btn-refund" disabled onclick="handleRefund()">
-                      Hoàn tiền cho người góp
-                    </button>
-                    <div class="condition-hint" id="refundConditionHint">Mở khi hết hạn mà không đạt mục tiêu.</div>
-                  </div>
-                </div>
-              </div>
-
             </div>
 
           </div>
+
         </div>
 
       </section>
 
-      <!-- ────────── CỘT PHẢI ─────────── -->
+      <!-- ─────────── CỘT PHẢI: HỆ THỐNG TABS THÔNG MINH ─────────── -->
       <aside class="secondary-column">
 
-        <!-- Sổ cái -->
-        <div class="panel" style="--i:2">
-          <div class="panel-core">
-            <div class="panel-header">
-              <div class="panel-header-title">
-                <h3>Sổ cái người góp</h3>
-              </div>
+        <div class="tabs-card">
+          <!-- THANH CHUYỂN TAB CỘT PHẢI -->
+          <div class="right-tab-bar">
+            <button class="right-tab-item active" data-tab="ledger" onclick="switchRightTab('ledger')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="tab-item-icon" aria-hidden="true">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+              </svg>
+              <span>Sổ cái</span>
               <span class="badge-count" id="backersBadge">0 người</span>
-            </div>
+            </button>
+            <button class="right-tab-item" data-tab="security" onclick="switchRightTab('security')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="tab-item-icon" aria-hidden="true">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+              </svg>
+              <span>Bảo mật</span>
+            </button>
+            <button class="right-tab-item" data-tab="events" onclick="switchRightTab('events')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="tab-item-icon" aria-hidden="true">
+                <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+              </svg>
+              <span>Nhật ký</span>
+              <span class="status-live-dot" aria-hidden="true"></span>
+            </button>
+          </div>
+
+          <!-- TAB PANE 1: SỔ CÁI & BẤT BIẾN TOÁN HỌC -->
+          <div class="right-tab-pane active" id="pane-ledger">
             <div class="ledger-table-wrap">
               <table class="ledger-table">
                 <thead>
@@ -331,119 +291,155 @@
                 </tbody>
               </table>
             </div>
+
+            <!-- Bất biến bảo toàn vốn (Zero Fund-Leakage Invariant) -->
             <div class="invariant-live" id="invLive">
-              <span class="invariant-live-expr">
-                pledged <b id="pledgedTotal">0.00</b> = Σ pledgedAmount <b id="pledgeSum">0.00</b>
-              </span>
+              <div class="inv-live-left">
+                <span class="inv-live-label">Kiểm chứng sổ cái on-chain:</span>
+                <span class="invariant-live-expr">
+                  pledged <b id="pledgedTotal">0.00</b> = Σ pledgedAmount <b id="pledgeSum">0.00</b>
+                </span>
+              </div>
               <span class="cond-badge" id="invLiveBadge">
                 <span class="cond-icon" aria-hidden="true"></span>
                 <span id="invLiveText">khớp</span>
               </span>
             </div>
           </div>
-        </div>
 
-        <!-- Hợp đồng thi hành những gì — chiều sâu kỹ thuật, không chỉ mô phỏng -->
-        <div class="panel" style="--i:3">
-          <div class="panel-core">
-            <div class="panel-header">
-              <div class="panel-header-title">
-                <h3>Hợp đồng cưỡng chế</h3>
-              </div>
-            </div>
-
+          <!-- TAB PANE 2: NGUYÊN TẮC BẢO MẬT & KIẾN TRÚC CEI -->
+          <div class="right-tab-pane" id="pane-security">
             <div class="enforce-list">
               <div class="enforce-item">
                 <span class="enforce-mark" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M20 6 9 17l-5-5"/>
                   </svg>
                 </span>
                 <div class="enforce-body">
                   <div class="enforce-title">Không ai rút được trước hạn</div>
-                  <div class="enforce-note">Mọi lối vào đều chặn bằng <code>block.timestamp &gt;= endAt</code>. Chủ dự án cũng không ngoại lệ.</div>
+                  <div class="enforce-note">Mọi lối vào kết toán đều chặn bằng <code>block.timestamp &gt;= endAt</code>. Chủ dự án cũng không ngoại lệ.</div>
                 </div>
               </div>
 
               <div class="enforce-item">
                 <span class="enforce-mark" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M20 6 9 17l-5-5"/>
                   </svg>
                 </span>
                 <div class="enforce-body">
                   <div class="enforce-title">Thiếu mục tiêu thì không giải ngân</div>
-                  <div class="enforce-note">Hàm <code>claim()</code> hoàn tác nếu <code>pledged &lt; goal</code>. Tiền ở lại trong hợp đồng cho tới khi từng người góp tự rút.</div>
+                  <div class="enforce-note">Hàm <code>claim()</code> hoàn tác nếu <code>pledged &lt; goal</code>. Tiền ở lại an toàn trong hợp đồng.</div>
                 </div>
               </div>
 
               <div class="enforce-item">
                 <span class="enforce-mark" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M20 6 9 17l-5-5"/>
                   </svg>
                 </span>
                 <div class="enforce-body">
                   <div class="enforce-title">Hoàn tiền theo lối kéo, không đẩy</div>
-                  <div class="enforce-note">Mỗi người tự gọi <code>refund()</code>. Một ví hỏng không thể chặn đường rút của những ví còn lại.</div>
+                  <div class="enforce-note">Mỗi người tự gọi <code>refund()</code>. Một ví lỗi không thể gây nghẽn đường rút của những ví còn lại.</div>
                 </div>
               </div>
 
               <div class="enforce-item">
                 <span class="enforce-mark" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M20 6 9 17l-5-5"/>
                   </svg>
                 </span>
                 <div class="enforce-body">
-                  <div class="enforce-title">Trạng thái ghi trước khi chuyển tiền</div>
-                  <div class="enforce-note">Mẫu CEI: số dư bị xoá về 0 rồi mới gửi ETH, nên không thể tái nhập để rút hai lần.</div>
+                  <div class="enforce-title">Mẫu Checks-Effects-Interactions (CEI)</div>
+                  <div class="enforce-note">Số dư được cập nhật về 0 trước khi chuyển ETH, triệt tiêu hoàn toàn lỗ hổng tái nhập (Reentrancy).</div>
                 </div>
               </div>
 
               <div class="enforce-item">
                 <span class="enforce-mark" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M20 6 9 17l-5-5"/>
                   </svg>
                 </span>
                 <div class="enforce-body">
                   <div class="enforce-title">ETH gửi ép không bị kẹt</div>
-                  <div class="enforce-note"><code>sweepExcessEther()</code> chỉ rút phần vượt quá <code>pledged</code>, nên quỹ hoàn tiền luôn đủ.</div>
+                  <div class="enforce-note"><code>sweepExcessEther()</code> chỉ quét phần vượt quá <code>pledged</code>, bảo toàn tuyệt đối quỹ hoàn tiền.</div>
                 </div>
               </div>
             </div>
 
-            <div class="condition-hint" style="margin-top:16px">
-              Mô phỏng chạy cùng luật với hợp đồng: mọi nút bị khoá đều kèm lý do, và lý do đổi theo đúng nhánh điều kiện.
+            <div class="security-footer-note">
+              🛡️ Thiết kế theo tiêu chuẩn OpenZeppelin &amp; Ethereum Security Best Practices.
             </div>
           </div>
-        </div>
 
-        <!-- Nhật ký sự kiện -->
-        <div class="panel" style="--i:4">
-          <div class="panel-core">
-            <div class="panel-header">
-              <div class="panel-header-title">
-                <h3>Nhật ký sự kiện</h3>
-                <span class="status-live-dot" aria-hidden="true"></span>
-              </div>
-              <button class="btn-clear-log" onclick="clearEventLogs()">Xoá</button>
+          <!-- TAB PANE 3: NHẬT KÝ SỰ KIỆN ON-CHAIN -->
+          <div class="right-tab-pane" id="pane-events">
+            <div class="event-pane-header">
+              <span class="event-pane-title">Sự kiện giao dịch thời gian thực</span>
+              <button class="btn-clear-log" onclick="clearEventLogs()">Xoá nhật ký</button>
             </div>
             <div class="event-feed" id="eventLogContainer">
-              <!-- app.js đổ vào -->
+              <!-- app.js tự động cập nhật sự kiện -->
             </div>
           </div>
+
         </div>
 
       </aside>
+
     </main>
 
-    <!-- ═════════════════════════════════════════════════════════════
-         CHẾ ĐỘ 2 — METAMASK ON-CHAIN
+    <!-- ══════════════════════════════════════════════════════════════
+         BẢNG ĐIỀU KHIỂN MÔ PHỎNG & THUYẾT TRÌNH (DEMO REMOTE BAR)
          ══════════════════════════════════════════════════════════════ -->
-    <section class="panel" id="web3View" style="display:none">
-      <div class="panel-core web3-standalone-panel">
+    <div class="demo-remote-bar">
+      <div class="remote-inner">
+        
+        <!-- Cụm 1: Kịch bản 1-click -->
+        <div class="remote-section">
+          <span class="remote-label">Kịch bản báo cáo:</span>
+          <button class="btn-scenario success" onclick="runSuccessScenario()" title="Mô phỏng đạt 11/10 ETH, qua hạn 7 ngày, Chủ dự án rút vốn">
+            Đạt mục tiêu &amp; rút vốn
+          </button>
+          <button class="btn-scenario fail" onclick="runFailScenario()" title="Mô phỏng chỉ đạt 3/10 ETH, qua hạn, Người ủng hộ hoàn tiền">
+            Không đạt &amp; hoàn tiền
+          </button>
+          <button class="btn-scenario reset" onclick="resetCampaign()" title="Đặt lại về trạng thái ban đầu">
+            Đặt lại
+          </button>
+        </div>
+
+        <div class="remote-divider" aria-hidden="true"></div>
+
+        <!-- Cụm 2: Tua nhanh thời gian EVM -->
+        <div class="remote-section remote-time-section">
+          <span class="remote-label">Tua thời gian:</span>
+          <div class="time-quick-jumps">
+            <button class="btn-time-jump" onclick="setTimeByDays(0)">0d</button>
+            <button class="btn-time-jump" onclick="setTimeByDays(3.5)">3.5d</button>
+            <button class="btn-time-jump" onclick="setTimeByDays(6.9)">6.9d</button>
+            <button class="btn-time-jump is-deadline" onclick="setTimeByDays(7.1)">7.1d (Hết hạn)</button>
+          </div>
+          <div class="time-slider-wrapper">
+            <input type="range" id="timeSlider" class="timeline-range" min="0" max="10" step="0.1" value="0"
+                   oninput="handleTimeSlider(this.value)" aria-label="Tua thời gian mô phỏng theo ngày">
+            <!-- Ẩn element kỹ thuật cho app.js tính fill -->
+            <div id="boltTimeFill" style="display:none; --p:0"></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ═════════════════════════════════════════════════════════════
+         CHẾ ĐỘ 2 — METAMASK ON-CHAIN (TƯƠNG TÁC TESTNET THẬT)
+         ══════════════════════════════════════════════════════════════ -->
+    <section class="web3-container" id="web3View" style="display:none">
+      <div class="web3-standalone-panel">
 
         <div class="web3-header-row">
           <div>
@@ -465,11 +461,9 @@
               <input type="text" id="web3ContractAddress" placeholder="0x… dán địa chỉ đã triển khai">
               <button id="btnConnectWallet" class="btn btn-primary" onclick="connectMetaMask()">
                 Kết nối MetaMask
-                <span class="icon-pod" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M5 12h14M13 6l6 6-6 6"/>
-                  </svg>
-                </span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon" aria-hidden="true">
+                  <path d="M5 12h14M13 6l6 6-6 6"/>
+                </svg>
               </button>
             </div>
           </div>
@@ -481,7 +475,7 @@
             </div>
             <div class="stat-card">
               <span class="stat-label">Đã góp / mục tiêu</span>
-              <span class="stat-val text-s1" id="w3Pledged">—</span>
+              <span class="stat-val text-accent" id="w3Pledged">—</span>
             </div>
             <div class="stat-card">
               <span class="stat-label">Thời gian còn lại</span>
@@ -507,7 +501,7 @@
 
   </div>
 
-  <!-- Thông báo trong trang, thay cho alert() của trình duyệt -->
+  <!-- Thông báo Toast trong trang -->
   <div class="toast-stack" id="toastStack" role="status" aria-live="polite"></div>
 
   <script src="app.js"></script>
