@@ -157,6 +157,15 @@ window.addEventListener('DOMContentLoaded', () => {
   resetCampaign();
   addLog('Khởi tạo', 'Hợp đồng được triển khai',
     `Mục tiêu ${appState.goalEth.toFixed(2)} ETH · Thời hạn 7 ngày (604.800 giây)`, 'event-pledge');
+  const pledgeInput = document.getElementById('pledgeInput');
+  if (pledgeInput) {
+    pledgeInput.addEventListener('input', (e) => {
+      const val = parseFloat(e.target.value);
+      document.querySelectorAll('.btn-chip').forEach(chip => {
+        chip.classList.toggle('active', parseFloat(chip.dataset.val) === val);
+      });
+    });
+  }
   render();
 });
 
@@ -194,6 +203,9 @@ function switchRightTab(tabName) {
 function setPledgeAmount(val) {
   const input = document.getElementById('pledgeInput');
   if (input) input.value = val;
+  document.querySelectorAll('.btn-chip').forEach(chip => {
+    chip.classList.toggle('active', parseFloat(chip.dataset.val) === parseFloat(val));
+  });
 }
 
 function getEffectiveTime() {
@@ -442,7 +454,14 @@ function render() {
   const days = daysPassed();
   const pastDeadline = days >= DEADLINE_DAYS;
 
-  // ---- 1. Viên trạng thái (nguồn sự thật duy nhất, không lặp lại ở nơi khác)
+  // ---- 1. Viên trạng thái & Huy hiệu vai trò ví
+  const roleBadge = document.getElementById('roleBadge');
+  if (roleBadge) {
+    const isCreator = wallet.id === 'creator';
+    roleBadge.className = `role-badge ${isCreator ? 'role-creator' : 'role-backer'}`;
+    roleBadge.textContent = isCreator ? '👑 Chủ dự án (Creator)' : `🛡️ ${wallet.name} (Backer)`;
+  }
+
   const pill = document.getElementById('campaignStatusPill');
   const pillText = document.getElementById('campaignStatusText');
   if (pill && pillText) {
@@ -511,13 +530,11 @@ function render() {
     if (appState.claimed) {
       claimHint.classList.add('hint-ready');
       claimHint.textContent = 'Đã giải ngân xong cho chủ dự án.';
+    } else if (wallet.id !== 'creator') {
+      claimHint.textContent = `Chỉ Chủ dự án mới có quyền rút vốn khi đủ điều kiện. Bạn đang kết nối: ${wallet.name} (Backer).`;
     } else if (state === 'Successful') {
-      if (wallet.id === 'creator') {
-        claimHint.classList.add('hint-ready');
-        claimHint.textContent = `Đủ điều kiện. Rút được ${appState.pledgedEth.toFixed(2)} ETH.`;
-      } else {
-        claimHint.textContent = `Điều kiện đã thoả nhưng ví này không phải creator — hãy chọn Chủ dự án.`;
-      }
+      claimHint.classList.add('hint-ready');
+      claimHint.textContent = `Đủ điều kiện. Rút được ${appState.pledgedEth.toFixed(2)} ETH.`;
     } else if (!pastDeadline) {
       // Nêu đích danh điều kiện đang chặn, và tình trạng của điều kiện còn lại —
       // hai nút kết toán chờ ở hai cửa khác nhau nên không được nói cùng một câu.
@@ -601,7 +618,18 @@ function renderBackersTable(backers) {
   if (!tbody) return;
 
   if (backers.length === 0) {
-    tbody.innerHTML = '<tr class="empty-placeholder"><td colspan="3">Chưa có lượt góp vốn nào.</td></tr>';
+    tbody.innerHTML = `
+      <tr class="empty-placeholder">
+        <td colspan="3">
+          <div class="empty-state-box">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" class="empty-icon" aria-hidden="true">
+              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+            </svg>
+            <div class="empty-title">Sổ cái on-chain chưa có bản ghi</div>
+            <div class="empty-desc">Chọn số ETH và bấm "Đóng góp ETH" ở bảng bên trái để ghi nhận giao dịch đầu tiên vào Smart Contract.</div>
+          </div>
+        </td>
+      </tr>`;
     return;
   }
 

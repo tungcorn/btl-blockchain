@@ -66,12 +66,15 @@
           <span id="networkLabel">Giả lập EVM</span>
         </div>
 
-        <select id="walletSelect" class="account-select" onchange="selectPersona(this.value)" aria-label="Chọn ví đang thao tác">
-          <option value="creator">Chủ dự án · 0x90F7…b906</option>
-          <option value="alice" selected>Alice · 0x71C6…08B3</option>
-          <option value="bob">Bob · 0x29E3…1e4A</option>
-          <option value="charlie">Charlie · 0x8F3b…3678</option>
-        </select>
+        <div class="wallet-group">
+          <select id="walletSelect" class="account-select" onchange="selectPersona(this.value)" aria-label="Chọn ví đang thao tác">
+            <option value="creator">Chủ dự án · 0x90F7…b906</option>
+            <option value="alice" selected>Alice · 0x71C6…08B3</option>
+            <option value="bob">Bob · 0x29E3…1e4A</option>
+            <option value="charlie">Charlie · 0x8F3b…3678</option>
+          </select>
+          <span class="role-badge role-backer" id="roleBadge">🛡️ Alice (Backer)</span>
+        </div>
 
         <button id="btnThemeToggle" class="btn-theme-toggle" onclick="toggleTheme()" title="Phím tắt T — đổi chế độ sáng/tối">
           <span class="theme-icon" id="themeIcon" aria-hidden="true"></span>
@@ -141,8 +144,8 @@
               </span>
             </div>
 
-            <!-- Cụm kiểm tra kỹ thuật thu gọn (Progressive Disclosure) -->
-            <details class="contract-spec-drawer">
+            <!-- Cụm kiểm tra kỹ thuật mở sẵn cho hội đồng phản biện (Smart Contract Invariants) -->
+            <details class="contract-spec-drawer" open>
               <summary class="spec-summary-btn">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="summary-arrow" aria-hidden="true">
                   <path d="m6 9 6 6 6-6"/>
@@ -162,22 +165,22 @@
             </details>
           </div>
 
-          <!-- DẢI 4 SỐ LIỆU TỔNG QUAN -->
+          <!-- DẢI 4 SỐ LIỆU TỔNG QUAN (Cân bằng dóng hàng ngang Baseline) -->
           <div class="metrics-strip">
             <div class="metric-cell">
-              <span class="cell-label">Quỹ trong hợp đồng</span>
+              <span class="cell-label">Tổng quỹ cam kết</span>
               <span class="cell-val text-accent" id="contractEscrowBalance">0.00 ETH</span>
             </div>
             <div class="metric-cell">
-              <span class="cell-label">Người đã góp</span>
+              <span class="cell-label">Số người ủng hộ</span>
               <span class="cell-val" id="displayBackersCount">0</span>
             </div>
             <div class="metric-cell">
-              <span class="cell-label">Bạn đã góp</span>
+              <span class="cell-label">Khoản bạn đã góp</span>
               <span class="cell-val" id="myCurrentPledge">0.00 ETH</span>
             </div>
             <div class="metric-cell">
-              <span class="cell-label">Số dư ví của bạn</span>
+              <span class="cell-label">Số dư khả dụng</span>
               <span class="cell-val" id="activeWalletBalance">12.50 ETH</span>
             </div>
           </div>
@@ -199,10 +202,10 @@
                   <span class="input-currency-unit">ETH</span>
                 </div>
                 <div class="preset-chips">
-                  <button type="button" class="btn-chip" onclick="setPledgeAmount(0.5)">0.5</button>
-                  <button type="button" class="btn-chip" onclick="setPledgeAmount(1.0)">1.0</button>
-                  <button type="button" class="btn-chip" onclick="setPledgeAmount(3.0)">3.0</button>
-                  <button type="button" class="btn-chip" onclick="setPledgeAmount(4.0)">4.0</button>
+                  <button type="button" class="btn-chip" data-val="0.5" onclick="setPledgeAmount(0.5)">0.5</button>
+                  <button type="button" class="btn-chip active" data-val="1.0" onclick="setPledgeAmount(1.0)">1.0</button>
+                  <button type="button" class="btn-chip" data-val="3.0" onclick="setPledgeAmount(3.0)">3.0</button>
+                  <button type="button" class="btn-chip" data-val="4.0" onclick="setPledgeAmount(4.0)">4.0</button>
                 </div>
               </div>
 
@@ -221,7 +224,7 @@
             <div class="action-pod">
               <div class="pod-header">
                 <span class="pod-title">2 · Kết toán quỹ</span>
-                <span class="pod-sub">Rút vốn hoặc hoàn tiền tự động</span>
+                <span class="pod-sub">Rút vốn (Chủ dự án) · Hoàn tiền (Backer tự rút)</span>
               </div>
 
               <div class="settlement-stack">
@@ -287,7 +290,17 @@
                   </tr>
                 </thead>
                 <tbody id="backersTableBody">
-                  <tr class="empty-placeholder"><td colspan="3">Chưa có lượt góp vốn nào.</td></tr>
+                  <tr class="empty-placeholder">
+                    <td colspan="3">
+                      <div class="empty-state-box">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" class="empty-icon" aria-hidden="true">
+                          <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                        </svg>
+                        <div class="empty-title">Sổ cái on-chain chưa có bản ghi</div>
+                        <div class="empty-desc">Chọn số ETH và bấm "Đóng góp ETH" ở bảng bên trái để ghi nhận giao dịch đầu tiên vào Smart Contract.</div>
+                      </div>
+                    </td>
+                  </tr>
                 </tbody>
               </table>
             </div>
