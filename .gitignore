@@ -1,0 +1,29 @@
+# Node dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Hardhat & Solidity build output
+artifacts/
+cache/
+typechain/
+typechain-types/
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+
+# Test & Coverage
+coverage/
+coverage.json
+
+# UI test shots & captures
+.shots/
+
+# System and IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

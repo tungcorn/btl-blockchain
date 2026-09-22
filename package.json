@@ -1,0 +1,30 @@
+{
+  "name": "lab02-crowdfunding-smart-contract",
+  "version": "1.0.0",
+  "description": "Decentralized Crowdfunding Smart Contract with Target Goal and Deadline (CEI Pattern, Pull-over-Push Refund, Reentrancy Protection)",
+  "main": "scripts/simulate.js",
+  "scripts": {
+    "test": "npm run test:mock && npm run test:evm",
+    "test:mock": "node test/Crowdfunding.test.js",
+    "test:evm": "hardhat test",
+    "test:coverage": "hardhat coverage",
+    "audit:static": "slither contracts --solc solc",
+    "simulate": "node scripts/simulate.js",
+    "serve": "npx serve demo"
+  },
+  "keywords": [
+    "blockchain",
+    "ethereum",
+    "solidity",
+    "smart-contract",
+    "crowdfunding",
+    "web3",
+    "security-audit"
+  ],
+  "author": "Blockchain Engineering Team",
+  "license": "MIT",
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "hardhat": "^2.29.1"
+  }
+}
