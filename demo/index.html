@@ -73,7 +73,7 @@
             <option value="bob">Bob · 0x29E3…1e4A</option>
             <option value="charlie">Charlie · 0x8F3b…3678</option>
           </select>
-          <span class="role-badge role-backer" id="roleBadge">🛡️ Alice (Backer)</span>
+          <span class="role-badge role-backer" id="roleBadge">🛡️ Backer</span>
         </div>
 
         <button id="btnThemeToggle" class="btn-theme-toggle" onclick="toggleTheme()" title="Phím tắt T — đổi chế độ sáng/tối">
@@ -144,21 +144,21 @@
               </span>
             </div>
 
-            <!-- Cụm kiểm tra kỹ thuật mở sẵn cho hội đồng phản biện (Smart Contract Invariants) -->
+            <!-- Cụm kiểm tra điều kiện chuyển trạng thái mở sẵn (State Transition Guards) -->
             <details class="contract-spec-drawer" open>
               <summary class="spec-summary-btn">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="summary-arrow" aria-hidden="true">
                   <path d="m6 9 6 6 6-6"/>
                 </svg>
-                <span>Kiểm tra logic on-chain (Smart Contract Invariants)</span>
+                <span>Điều kiện tiên quyết giải ngân (State Guards)</span>
               </summary>
               <div class="spec-content-body">
                 <div class="spec-item" id="invGoal">
-                  <span class="spec-tag">Bất biến vốn:</span>
+                  <span class="spec-tag">Điều kiện vốn (Goal Guard):</span>
                   <div class="contract-expr" id="exprGoal"></div>
                 </div>
                 <div class="spec-item" id="invTime">
-                  <span class="spec-tag">Bất biến thời gian:</span>
+                  <span class="spec-tag">Điều kiện thời gian (Time Guard):</span>
                   <div class="contract-expr" id="exprTime"></div>
                 </div>
               </div>
@@ -206,6 +206,7 @@
                   <button type="button" class="btn-chip active" data-val="1.0" onclick="setPledgeAmount(1.0)">1.0</button>
                   <button type="button" class="btn-chip" data-val="3.0" onclick="setPledgeAmount(3.0)">3.0</button>
                   <button type="button" class="btn-chip" data-val="4.0" onclick="setPledgeAmount(4.0)">4.0</button>
+                  <button type="button" class="btn-chip btn-chip-max" data-val="max" onclick="setPledgeMax()" title="Tự động điền số ETH cần để đạt mục tiêu hoặc tối đa ví">MAX</button>
                 </div>
               </div>
 
@@ -216,8 +217,9 @@
                     <path d="M12 19V5M5 12l7-7 7 7"/>
                   </svg>
                 </button>
-                <button id="btnUnpledge" class="btn btn-secondary" onclick="handleUnpledge()">Rút cọc</button>
+                <button id="btnUnpledge" class="btn btn-secondary" onclick="handleUnpledge()">Hủy góp (Unpledge)</button>
               </div>
+              <div class="condition-hint" id="unpledgeConditionHint">Chỉ mở khi bạn đã đóng góp (> 0 ETH) và chiến dịch còn hạn.</div>
             </div>
 
             <!-- Pod 2: Kết toán hợp đồng -->
@@ -415,8 +417,11 @@
         <!-- Cụm 1: Kịch bản 1-click -->
         <div class="remote-section">
           <span class="remote-label">Kịch bản báo cáo:</span>
-          <button class="btn-scenario success" onclick="runSuccessScenario()" title="Mô phỏng đạt 11/10 ETH, qua hạn 7 ngày, Chủ dự án rút vốn">
+          <button class="btn-scenario success" onclick="runSuccessScenario()" title="Mô phỏng đạt 11/10 ETH, qua hạn 7 ngày, tự động chọn ví Chủ dự án để rút vốn">
             Đạt mục tiêu &amp; rút vốn
+          </button>
+          <button class="btn-scenario oversub" onclick="runOversubscribedScenario()" title="Mô phỏng góp 12/10 ETH, chứng minh hợp đồng nhận toàn bộ và giải ngân đầy đủ 12 ETH">
+            Vượt mục tiêu (12 ETH)
           </button>
           <button class="btn-scenario fail" onclick="runFailScenario()" title="Mô phỏng chỉ đạt 3/10 ETH, qua hạn, Người ủng hộ hoàn tiền">
             Không đạt &amp; hoàn tiền
@@ -432,10 +437,10 @@
         <div class="remote-section remote-time-section">
           <span class="remote-label">Tua thời gian:</span>
           <div class="time-quick-jumps">
-            <button class="btn-time-jump" onclick="setTimeByDays(0)">0d</button>
-            <button class="btn-time-jump" onclick="setTimeByDays(3.5)">3.5d</button>
-            <button class="btn-time-jump" onclick="setTimeByDays(6.9)">6.9d</button>
-            <button class="btn-time-jump is-deadline" onclick="setTimeByDays(7.1)">7.1d (Hết hạn)</button>
+            <button class="btn-time-jump" id="timeJump0" onclick="setTimeByDays(0)">0d</button>
+            <button class="btn-time-jump" id="timeJump3" onclick="setTimeByDays(3.5)">3.5d</button>
+            <button class="btn-time-jump" id="timeJump6" onclick="setTimeByDays(6.9)">6.9d</button>
+            <button class="btn-time-jump is-deadline" id="timeJump7" onclick="setTimeByDays(7.1)">7.1d · Hết hạn</button>
           </div>
           <div class="time-slider-wrapper">
             <input type="range" id="timeSlider" class="timeline-range" min="0" max="10" step="0.1" value="0"

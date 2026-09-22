@@ -208,6 +208,18 @@ function setPledgeAmount(val) {
   });
 }
 
+function setPledgeMax() {
+  const wallet = getActiveWallet();
+  const needed = Math.max(0, appState.goalEth - appState.pledgedEth);
+  let maxVal = needed > 0 && wallet.balance >= needed ? needed : wallet.balance;
+  maxVal = Math.round(maxVal * 100) / 100;
+  if (maxVal <= 0) maxVal = 1.0;
+  setPledgeAmount(maxVal);
+  document.querySelectorAll('.btn-chip').forEach(chip => {
+    chip.classList.toggle('active', chip.dataset.val === 'max');
+  });
+}
+
 function getEffectiveTime() {
   return Math.floor(Date.now() / 1000) + appState.simulatedTimeOffset;
 }
@@ -426,7 +438,24 @@ function runSuccessScenario() {
 
   selectPersona('creator');
   render();
-  notify('info', 'Kịch bản đạt mục tiêu: quỹ 11.00 ETH, đã qua hạn. Ví đang chọn là Chủ dự án nên nút rút vốn đã mở.');
+  notify('info', 'Kịch bản đạt mục tiêu: quỹ 11.00 ETH, đã qua hạn. Đã tự động kết nối ví Chủ dự án để rút vốn.');
+}
+
+function runOversubscribedScenario() {
+  resetCampaign();
+  pledgeFor(SIM_WALLETS.alice, 4.0);
+  pledgeFor(SIM_WALLETS.bob, 4.0);
+  pledgeFor(SIM_WALLETS.charlie, 4.0);
+
+  const slider = document.getElementById('timeSlider');
+  if (slider) slider.value = 7.2;
+  handleTimeSlider(7.2);
+  addLog('Kịch bản', 'Vượt mục tiêu 120%',
+    'Góp 12.00 ETH / 10.00 ETH mục tiêu. Hợp đồng bảo toàn trọn vẹn 12 ETH cho Chủ dự án rút.', 'event-claim');
+
+  selectPersona('creator');
+  render();
+  notify('success', 'Mô phỏng Góp vượt mục tiêu (12.00 ETH / 10.00 ETH). Chủ dự án sẽ rút toàn bộ 12.00 ETH mà không thất thoát quỹ.');
 }
 
 function runFailScenario() {
@@ -459,7 +488,7 @@ function render() {
   if (roleBadge) {
     const isCreator = wallet.id === 'creator';
     roleBadge.className = `role-badge ${isCreator ? 'role-creator' : 'role-backer'}`;
-    roleBadge.textContent = isCreator ? '👑 Chủ dự án (Creator)' : `🛡️ ${wallet.name} (Backer)`;
+    roleBadge.textContent = isCreator ? '👑 Creator' : '🛡️ Backer';
   }
 
   const pill = document.getElementById('campaignStatusPill');
@@ -568,7 +597,33 @@ function render() {
     }
   }
 
-  // ---- 8. Bảng sổ cái
+  // ---- 8. Gợi ý điều kiện cho Hủy góp (Unpledge)
+  const unpledgeHint = document.getElementById('unpledgeConditionHint');
+  if (unpledgeHint) {
+    unpledgeHint.className = 'condition-hint';
+    if (mine > 0 && !pastDeadline) {
+      unpledgeHint.classList.add('hint-ready');
+      unpledgeHint.textContent = `Khả dụng: Bạn có thể hủy góp và nhận lại ${mine.toFixed(2)} ETH trước deadline.`;
+    } else if (pastDeadline) {
+      unpledgeHint.textContent = 'Đã hết hạn: Không thể hủy góp (dùng Hoàn tiền nếu dự án thất bại).';
+    } else {
+      unpledgeHint.textContent = 'Chỉ mở khi bạn đã đóng góp (> 0 ETH) và chiến dịch còn hạn.';
+    }
+  }
+
+  // ---- 9. Highlight nút mốc thời gian đang trùng khớp
+  const jumps = [
+    { id: 'timeJump0', day: 0 },
+    { id: 'timeJump3', day: 3.5 },
+    { id: 'timeJump6', day: 6.9 },
+    { id: 'timeJump7', day: 7.1 }
+  ];
+  jumps.forEach(j => {
+    const el = document.getElementById(j.id);
+    if (el) el.classList.toggle('active', Math.abs(days - j.day) < 0.1);
+  });
+
+  // ---- 10. Bảng sổ cái
   renderBackersTable(backers);
 }
 

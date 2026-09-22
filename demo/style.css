@@ -68,8 +68,8 @@
   --text-muted:      #475569;
   --text-subtle:     #475569; /* Nâng tương phản đạt chuẩn WCAG AA >= 4.5:1 */
 
-  --color-primary:   #2563eb;
-  --color-primary-hover: #1d4ed8;
+  --color-primary:   #1d4ed8; /* Blue 700: đạt chuẩn WCAG AAA (> 7.0:1) trên máy chiếu */
+  --color-primary-hover: #1e40af; /* Blue 800 */
   --color-accent:    #0284c7;
   --color-success:   #059669;
   --color-warning:   #d97706;
@@ -228,10 +228,11 @@ body {
 }
 
 .account-select {
+  height: 32px;
   background: var(--bg-subtle);
   color: var(--text-main);
   border: 1px solid var(--border-hairline);
-  padding: 6px 12px;
+  padding: 0 12px;
   border-radius: var(--radius-md);
   font-size: 0.82rem;
   font-family: var(--font-ui);
@@ -250,10 +251,11 @@ body {
 .role-badge {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 4px 9px;
-  border-radius: var(--radius-sm);
-  font-size: 0.74rem;
+  gap: 5px;
+  height: 32px;
+  padding: 0 10px;
+  border-radius: var(--radius-md);
+  font-size: 0.76rem;
   font-weight: 600;
   white-space: nowrap;
   font-family: var(--font-ui);
@@ -776,10 +778,16 @@ body {
 }
 
 .btn-chip.active {
-  background: rgba(37, 99, 235, 0.12);
+  background: rgba(29, 78, 216, 0.14);
   color: var(--color-primary);
   border-color: var(--color-primary);
   font-weight: 700;
+}
+
+.btn-chip-max {
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: var(--color-primary);
 }
 
 .pod-btn-group {
@@ -843,7 +851,17 @@ body {
   background: var(--bg-subtle) !important;
   color: var(--text-subtle) !important;
   border: 1px solid var(--border-hairline) !important;
-  opacity: 0.55;
+  opacity: 0.65;
+}
+
+[data-theme="light"] .btn-primary:disabled,
+[data-theme="light"] .btn-secondary:disabled,
+[data-theme="light"] .btn-claim:disabled,
+[data-theme="light"] .btn-refund:disabled {
+  background: #e2e8f0 !important;
+  color: #64748b !important;
+  border: 1px solid #cbd5e1 !important;
+  opacity: 0.85;
 }
 
 /* Settlement Stack */
@@ -985,10 +1003,11 @@ body {
 /* Table styling */
 .ledger-table-wrap {
   flex: 1;
-  min-height: 240px;
-  max-height: 380px;
+  min-height: 220px;
   overflow-y: auto;
-  margin-bottom: 14px;
+  margin-bottom: 12px;
+  display: flex;
+  flex-direction: column;
 }
 
 .ledger-table {
@@ -1016,7 +1035,7 @@ body {
   font-family: var(--font-mono);
 }
 
-/* EMPTY STATE GIÀU TÍNH HƯỚNG DẪN */
+/* EMPTY STATE GIÀU TÍNH HƯỚNG DẪN — CĂN GIỮA QUANG HỌC */
 .empty-placeholder td {
   padding: 0;
   border-bottom: none;
@@ -1027,16 +1046,17 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 38px 16px;
+  padding: 46px 16px;
+  margin: auto 0; /* Tự động cân bằng khoảng trống giữa card */
   text-align: center;
 }
 
 .empty-icon {
-  width: 36px;
-  height: 36px;
+  width: 38px;
+  height: 38px;
   color: var(--text-subtle);
-  opacity: 0.45;
-  margin-bottom: 10px;
+  opacity: 0.5;
+  margin-bottom: 12px;
 }
 
 .empty-title {
@@ -1089,7 +1109,7 @@ body {
   align-items: center;
   justify-content: space-between;
   background: var(--bg-subtle);
-  padding: 10px 14px;
+  padding: 12px 16px;
   border-radius: var(--radius-md);
   border: 1px solid var(--border-hairline);
 }
@@ -1263,7 +1283,8 @@ body {
   bottom: 16px;
   left: 50%;
   transform: translateX(-50%);
-  width: min(96%, 1100px);
+  width: fit-content;
+  max-width: min(96%, 1100px);
   z-index: 100;
   background: rgba(17, 24, 39, 0.85); /* Trong suốt mờ để backdrop blur có tác dụng */
   border: 1px solid var(--border-hairline);
@@ -1336,6 +1357,17 @@ body {
   color: #ffffff;
 }
 
+.btn-scenario.oversub {
+  background: rgba(14, 165, 233, 0.12);
+  color: #0284c7;
+  border-color: rgba(14, 165, 233, 0.3);
+}
+
+.btn-scenario.oversub:hover {
+  background: #0284c7;
+  color: #ffffff;
+}
+
 .btn-scenario.fail {
   background: rgba(239, 68, 68, 0.12);
   color: var(--color-danger);
@@ -1371,11 +1403,20 @@ body {
   color: var(--text-muted);
   cursor: pointer;
   transition: var(--transition-fast);
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .btn-time-jump:hover {
   color: var(--text-main);
   border-color: var(--border-focus);
+}
+
+.btn-time-jump.active {
+  background: rgba(29, 78, 216, 0.14);
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+  font-weight: 700;
 }
 
 .btn-time-jump.is-deadline {
