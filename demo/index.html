@@ -499,14 +499,53 @@
               <span class="stat-label">Thời gian còn lại</span>
               <span class="stat-val" id="w3TimeLeft">—</span>
             </div>
+            <div class="stat-card">
+              <span class="stat-label">Khoản bạn đã góp</span>
+              <span class="stat-val" id="w3MyPledge">—</span>
+            </div>
+          </div>
+
+          <!-- Cụm nhập số ETH đóng góp On-chain độc lập -->
+          <div class="web3-pledge-box">
+            <div class="web3-pledge-header">
+              <label class="web3-label" for="web3PledgeAmount">Số ETH muốn đóng góp on-chain</label>
+              <span class="web3-balance-note" id="w3WalletBalance">Số dư ví: —</span>
+            </div>
+            <div class="web3-input-row">
+              <div class="input-currency-wrapper">
+                <input type="number" id="web3PledgeAmount" min="0.01" step="0.1" value="0.1"
+                       class="clean-num-input" placeholder="0.1" aria-label="Số ETH đóng góp on-chain">
+                <span class="input-currency-unit">ETH</span>
+              </div>
+              <div class="preset-chips">
+                <button type="button" class="btn-chip active" data-w3val="0.1" onclick="setWeb3Pledge(0.1)">0.1</button>
+                <button type="button" class="btn-chip" data-w3val="0.5" onclick="setWeb3Pledge(0.5)">0.5</button>
+                <button type="button" class="btn-chip" data-w3val="1.0" onclick="setWeb3Pledge(1.0)">1.0</button>
+                <button type="button" class="btn-chip btn-chip-max" data-w3val="max" onclick="setWeb3PledgeMax()" title="Tự động điền số dư ví MetaMask">MAX</button>
+              </div>
+            </div>
           </div>
 
           <div class="web3-actions-row">
-            <button id="btnW3Pledge" class="btn btn-primary" onclick="web3Pledge()" disabled>Gửi ETH</button>
-            <button id="btnW3Unpledge" class="btn btn-secondary" onclick="web3Unpledge()" disabled>Rút cọc</button>
-            <button id="btnW3Claim" class="btn btn-claim" onclick="web3Claim()" disabled>Rút vốn</button>
-            <button id="btnW3Refund" class="btn btn-refund" onclick="web3Refund()" disabled>Hoàn tiền</button>
-            <button id="btnW3Refresh" class="btn btn-secondary" onclick="refreshOnChainState()" disabled>Đọc lại</button>
+            <button id="btnW3Pledge" class="btn btn-primary" onclick="web3Pledge()" disabled>
+              <span>Đóng góp ETH on-chain</span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon" aria-hidden="true">
+                <path d="M12 19V5M5 12l7-7 7 7"/>
+              </svg>
+            </button>
+            <button id="btnW3Unpledge" class="btn btn-secondary" onclick="web3Unpledge()" disabled>Hủy góp (Unpledge)</button>
+            <button id="btnW3Claim" class="btn btn-claim" onclick="web3Claim()" disabled>Rút vốn (Chủ dự án)</button>
+            <button id="btnW3Refund" class="btn btn-refund" onclick="web3Refund()" disabled>Hoàn tiền (Backer)</button>
+            <button id="btnW3Refresh" class="btn btn-secondary" onclick="refreshOnChainState()" disabled title="Đọc lại dữ liệu mới nhất từ RPC Node">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon" aria-hidden="true">
+                <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+              </svg>
+              <span>Làm mới</span>
+            </button>
+          </div>
+
+          <div class="web3-hints-stack">
+            <div class="condition-hint" id="web3ActionHint">Kết nối MetaMask và chọn địa chỉ hợp đồng để mở khóa các thao tác on-chain.</div>
           </div>
 
           <div class="web3-log-card" id="web3Log">

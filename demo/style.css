@@ -1604,8 +1604,14 @@ input:focus-visible,
 
 .web3-stats-bar {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 14px;
+}
+
+@media (max-width: 900px) {
+  .web3-stats-bar {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 .stat-card {
@@ -1629,10 +1635,50 @@ input:focus-visible,
   font-family: var(--font-mono);
 }
 
+/* Cụm nhập vốn Web3 On-chain độc lập */
+.web3-pledge-box {
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-md);
+  padding: 16px 18px;
+}
+
+.web3-pledge-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 8px;
+}
+
+.web3-balance-note {
+  font-size: 0.76rem;
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+}
+
+.web3-input-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.web3-input-row .input-currency-wrapper {
+  flex: 1.2;
+}
+
+.web3-input-row .preset-chips {
+  flex: 1.8;
+}
+
 .web3-actions-row {
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
+}
+
+.web3-hints-stack {
+  margin-top: -6px;
+  margin-bottom: 4px;
 }
 
 .web3-log-card {
@@ -1644,6 +1690,52 @@ input:focus-visible,
   font-size: 0.8rem;
   color: var(--text-muted);
   min-height: 100px;
+  line-height: 1.6;
+}
+
+/* Liên kết minh chứng Sepolia Etherscan */
+.etherscan-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--color-accent);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  font-weight: 600;
+  transition: var(--transition-fast);
+}
+
+.etherscan-link:hover {
+  color: var(--color-primary);
+}
+
+.etherscan-icon {
+  width: 12px;
+  height: 12px;
+  display: inline-block;
+}
+
+/* Trạng thái Loading chống Double Click */
+.btn.is-loading {
+  position: relative;
+  pointer-events: none;
+  opacity: 0.75;
+}
+
+.btn.is-loading::after {
+  content: "";
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: btnSpin 0.6s linear infinite;
+  margin-left: 6px;
+}
+
+@keyframes btnSpin {
+  to { transform: rotate(360deg); }
 }
 
 /* --------------------------------------------------------------------------
