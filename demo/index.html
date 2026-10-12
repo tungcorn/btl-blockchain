@@ -149,29 +149,9 @@
                 <span id="condTimeText">chưa thoả</span>
               </span>
             </div>
-
-            <!-- Cụm kiểm tra điều kiện chuyển trạng thái mở sẵn (State Transition Guards) -->
-            <details class="contract-spec-drawer" open>
-              <summary class="spec-summary-btn">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="summary-arrow" aria-hidden="true">
-                  <path d="m6 9 6 6 6-6"/>
-                </svg>
-                <span>Điều kiện tiên quyết giải ngân (State Guards)</span>
-              </summary>
-              <div class="spec-content-body">
-                <div class="spec-item" id="invGoal">
-                  <span class="spec-tag">Điều kiện vốn (Goal Guard):</span>
-                  <div class="contract-expr" id="exprGoal"></div>
-                </div>
-                <div class="spec-item" id="invTime">
-                  <span class="spec-tag">Điều kiện thời gian (Time Guard):</span>
-                  <div class="contract-expr" id="exprTime"></div>
-                </div>
-              </div>
-            </details>
           </div>
 
-          <!-- DẢI 4 SỐ LIỆU TỔNG QUAN (Cân bằng dóng hàng ngang Baseline) -->
+          <!-- DẢI 4 SỐ LIỆU TỔNG QUAN (Unified Segmented Metric Strip) -->
           <div class="metrics-strip">
             <div class="metric-cell">
               <span class="cell-label">Tổng quỹ cam kết</span>
@@ -190,6 +170,26 @@
               <span class="cell-val" id="activeWalletBalance">12.50 ETH</span>
             </div>
           </div>
+
+          <!-- Cụm kiểm tra điều kiện chuyển trạng thái (State Transition Guards Rails) -->
+          <details class="contract-spec-drawer" open>
+            <summary class="spec-summary-btn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="summary-arrow" aria-hidden="true">
+                <path d="m6 9 6 6 6-6"/>
+              </svg>
+              <span>Điều kiện tiên quyết giải ngân (State Guards)</span>
+            </summary>
+            <div class="spec-content-body">
+              <div class="spec-item" id="invGoal">
+                <span class="spec-tag">Điều kiện vốn (Goal Guard):</span>
+                <div class="contract-expr" id="exprGoal"></div>
+              </div>
+              <div class="spec-item" id="invTime">
+                <span class="spec-tag">Điều kiện thời gian (Time Guard):</span>
+                <div class="contract-expr" id="exprTime"></div>
+              </div>
+            </div>
+          </details>
 
           <!-- KHU VỰC THAO TÁC HÀNH ĐỘNG (ACTION COCKPIT) -->
           <div class="action-cockpit">

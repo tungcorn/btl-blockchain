@@ -375,6 +375,12 @@ body {
   box-shadow: var(--shadow-card);
 }
 
+[data-theme="light"] .campaign-hero-card,
+[data-theme="light"] .tabs-card {
+  border-color: #cbd5e1;
+  box-shadow: 0 4px 16px -2px rgba(15, 23, 42, 0.06);
+}
+
 .hero-header-row {
   display: flex;
   justify-content: space-between;
@@ -383,19 +389,20 @@ body {
 }
 
 .campaign-subtag {
-  font-size: 0.78rem;
+  font-size: 0.74rem;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--color-primary);
-  margin-bottom: 4px;
+  letter-spacing: 0.04em;
+  color: var(--text-subtle);
+  margin-bottom: 2px;
 }
 
 .campaign-title {
-  font-size: 1.85rem;
+  font-size: 2rem;
   font-weight: 800;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.025em;
   color: var(--text-main);
+  line-height: 1.15;
 }
 
 .state-pill {
@@ -404,32 +411,50 @@ body {
   gap: 6px;
   padding: 4px 12px;
   border-radius: var(--radius-full);
-  font-size: 0.75rem;
+  font-size: 0.74rem;
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
 
 .state-active {
-  background: rgba(59, 130, 246, 0.12);
+  background: rgba(37, 99, 235, 0.1);
   color: var(--color-primary);
-  border: 1px solid rgba(59, 130, 246, 0.25);
+  border: 1px solid rgba(37, 99, 235, 0.28);
+}
+
+[data-theme="light"] .state-active {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border-color: #bfdbfe;
 }
 
 .state-successful {
-  background: rgba(16, 185, 129, 0.15);
+  background: rgba(16, 185, 129, 0.12);
   color: var(--color-success);
   border: 1px solid rgba(16, 185, 129, 0.3);
 }
 
+[data-theme="light"] .state-successful {
+  background: #ecfdf5;
+  color: #059669;
+  border-color: #a7f3d0;
+}
+
 .state-failed {
-  background: rgba(239, 68, 68, 0.12);
+  background: rgba(244, 63, 94, 0.12);
   color: var(--color-danger);
-  border: 1px solid rgba(239, 68, 68, 0.25);
+  border: 1px solid rgba(244, 63, 94, 0.3);
+}
+
+[data-theme="light"] .state-failed {
+  background: #fff1f2;
+  color: #dc2626;
+  border-color: #fecdd3;
 }
 
 .state-claimed {
-  background: rgba(100, 116, 139, 0.15);
+  background: rgba(100, 116, 139, 0.12);
   color: var(--text-muted);
   border: 1px solid rgba(100, 116, 139, 0.25);
 }
@@ -589,11 +614,14 @@ body {
   font-family: var(--font-mono);
 }
 
-/* Smart Contract Technical Disclosure (Progressive Disclosure) */
+/* Smart Contract Technical Disclosure (Progressive Disclosure Rails) */
 .contract-spec-drawer {
-  margin-top: 14px;
-  border-top: 1px solid var(--border-hairline);
-  padding-top: 10px;
+  margin-top: 0;
+  margin-bottom: 20px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
 }
 
 .spec-summary-btn {
@@ -642,7 +670,7 @@ body {
 }
 
 .spec-item {
-  background: var(--bg-card);
+  background: var(--bg-surface);
   padding: 8px 12px;
   border-radius: var(--radius-sm);
   border: 1px solid var(--border-hairline);
@@ -664,12 +692,15 @@ body {
   color: var(--text-main);
 }
 
-/* --- METRICS STRIP (DÓNG HÀNG BASELINE CHUẨN XÁC) --- */
+/* --- METRICS STRIP (UNIFIED CONTINUOUS INSTRUMENT BAR) --- */
 .metrics-strip {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 12px;
-  margin-bottom: 24px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-md);
+  margin-bottom: 18px;
+  overflow: hidden;
 }
 
 @media (max-width: 768px) {
@@ -679,18 +710,33 @@ body {
 }
 
 .metric-cell {
-  background: var(--bg-card);
-  padding: 12px 14px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border-hairline);
+  background: transparent;
+  padding: 12px 16px;
+  border: none;
+  border-right: 1px solid var(--border-hairline);
+  border-radius: 0;
+}
+
+.metric-cell:last-child {
+  border-right: none;
+}
+
+@media (max-width: 768px) {
+  .metric-cell:nth-child(2) {
+    border-right: none;
+  }
+  .metric-cell:nth-child(1),
+  .metric-cell:nth-child(2) {
+    border-bottom: 1px solid var(--border-hairline);
+  }
 }
 
 .cell-label {
   display: block;
-  font-size: 0.73rem;
+  font-size: 0.72rem;
   font-weight: 600;
-  text-transform: none;
-  letter-spacing: normal;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
   color: var(--text-subtle);
   margin-bottom: 4px;
   white-space: nowrap;
@@ -699,7 +745,7 @@ body {
 }
 
 .cell-val {
-  font-size: 1.2rem;
+  font-size: 1.25rem;
   font-weight: 700;
   font-family: var(--font-mono);
   color: var(--text-main);
@@ -891,22 +937,34 @@ body {
 }
 
 .btn-primary:disabled,
-.btn-secondary:disabled,
-.btn-claim:disabled,
-.btn-refund:disabled {
+.btn-secondary:disabled {
   background: var(--bg-subtle) !important;
   color: var(--text-subtle) !important;
   border: 1px solid var(--border-hairline) !important;
   opacity: 0.65;
 }
 
+.btn-claim:disabled,
+.btn-refund:disabled {
+  background: transparent !important;
+  color: var(--text-subtle) !important;
+  border: 1px dashed var(--border-hairline) !important;
+  opacity: 0.6;
+}
+
 [data-theme="light"] .btn-primary:disabled,
-[data-theme="light"] .btn-secondary:disabled,
-[data-theme="light"] .btn-claim:disabled,
-[data-theme="light"] .btn-refund:disabled {
-  background: #e2e8f0 !important;
+[data-theme="light"] .btn-secondary:disabled {
+  background: #f1f5f9 !important;
   color: #64748b !important;
   border: 1px solid #cbd5e1 !important;
+  opacity: 0.85;
+}
+
+[data-theme="light"] .btn-claim:disabled,
+[data-theme="light"] .btn-refund:disabled {
+  background: #f8fafc !important;
+  color: #64748b !important;
+  border: 1px dashed #cbd5e1 !important;
   opacity: 0.85;
 }
 
@@ -1092,16 +1150,16 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 46px 16px;
-  margin: auto 0; /* Tự động cân bằng khoảng trống giữa card */
+  padding: 56px 20px;
+  margin: auto 0;
   text-align: center;
 }
 
 .empty-icon {
-  width: 38px;
-  height: 38px;
+  width: 32px;
+  height: 32px;
   color: var(--text-subtle);
-  opacity: 0.5;
+  opacity: 0.45;
   margin-bottom: 12px;
 }
 
@@ -1109,15 +1167,15 @@ body {
   font-size: 0.88rem;
   font-weight: 600;
   color: var(--text-main);
-  margin-bottom: 4px;
+  margin-bottom: 6px;
   font-family: var(--font-ui);
 }
 
 .empty-desc {
   font-size: 0.76rem;
   color: var(--text-muted);
-  max-width: 290px;
-  line-height: 1.4;
+  max-width: 310px;
+  line-height: 1.45;
   font-family: var(--font-ui);
 }
 
