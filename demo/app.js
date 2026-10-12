@@ -488,7 +488,7 @@ function render() {
   if (roleBadge) {
     const isCreator = wallet.id === 'creator';
     roleBadge.className = `role-badge ${isCreator ? 'role-creator' : 'role-backer'}`;
-    roleBadge.textContent = isCreator ? '👑 Creator' : '🛡️ Backer';
+    roleBadge.textContent = isCreator ? 'Creator' : 'Backer';
   }
 
   const pill = document.getElementById('campaignStatusPill');
@@ -1090,11 +1090,11 @@ async function refreshOnChainState() {
       if (st === 0) {
         hintEl.textContent = `Chiến dịch đang mở. Ví của bạn đã góp ${ethers.formatEther(myPledge)} ETH.${myPledge > 0n ? ' Bạn có thể đóng góp thêm hoặc Hủy góp (Unpledge).' : ' Bạn có thể nhập số ETH và bấm Đóng góp.'}`;
       } else if (st === 1) {
-        hintEl.textContent = isCreator ? '🎉 Mục tiêu đã đạt! Bạn là chủ dự án: Bấm "Rút vốn" để giải ngân quỹ về ví.' : '🎉 Chiến dịch thành công! Toàn bộ quỹ thuộc quyền giải ngân của chủ dự án.';
+        hintEl.textContent = isCreator ? 'Mục tiêu đã đạt. Bạn là chủ dự án: Bấm "Rút vốn" để giải ngân quỹ về ví.' : 'Chiến dịch thành công. Toàn bộ quỹ thuộc quyền giải ngân của chủ dự án.';
       } else if (st === 2) {
-        hintEl.textContent = myPledge > 0n ? '⚠️ Chiến dịch hết hạn không đạt mục tiêu: Bấm "Hoàn tiền" để rút lại 100% ETH theo chuẩn Pull-over-Push.' : '⚠️ Chiến dịch không đạt mục tiêu. Ví này không có khoản đóng góp nào để hoàn lại.';
+        hintEl.textContent = myPledge > 0n ? 'Chiến dịch hết hạn không đạt mục tiêu: Bấm "Hoàn tiền" để rút lại 100% ETH theo chuẩn Pull-over-Push.' : 'Chiến dịch không đạt mục tiêu. Ví này không có khoản đóng góp nào để hoàn lại.';
       } else if (st === 3) {
-        hintEl.textContent = '🔒 Quỹ đã được chủ dự án rút thành công (Claimed).';
+        hintEl.textContent = 'Quỹ đã được chủ dự án rút thành công (Claimed).';
       }
     }
 
