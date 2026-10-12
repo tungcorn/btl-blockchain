@@ -390,10 +390,10 @@ body {
 
 .campaign-subtag {
   font-size: 0.74rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--text-subtle);
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--text-muted);
   margin-bottom: 2px;
 }
 
@@ -733,11 +733,11 @@ body {
 
 .cell-label {
   display: block;
-  font-size: 0.72rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--text-subtle);
+  font-size: 0.74rem;
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--text-muted);
   margin-bottom: 4px;
   white-space: nowrap;
   overflow: hidden;
@@ -1013,6 +1013,7 @@ body {
   font-size: 0.72rem;
   color: var(--text-subtle);
   line-height: 1.35;
+  margin-top: 3px;
 }
 
 .condition-hint.hint-ready {
@@ -1116,6 +1117,7 @@ body {
 
 .ledger-table {
   width: 100%;
+  height: 100%;
   border-collapse: collapse;
   font-size: 0.82rem;
   table-layout: fixed; /* Chống giật layout khi nạp dữ liệu */
@@ -1123,11 +1125,11 @@ body {
 
 .ledger-table th {
   text-align: left;
-  font-size: 0.72rem;
+  font-size: 0.74rem;
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--text-subtle);
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--text-muted);
   padding: 8px 10px;
   border-bottom: 1px solid var(--border-hairline);
 }
@@ -1140,9 +1142,15 @@ body {
 }
 
 /* EMPTY STATE GIÀU TÍNH HƯỚNG DẪN — CĂN GIỮA QUANG HỌC */
+.empty-placeholder {
+  height: 100%;
+}
+
 .empty-placeholder td {
   padding: 0;
   border-bottom: none;
+  height: 100%;
+  vertical-align: middle;
 }
 
 .empty-state-box {
@@ -1150,8 +1158,8 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 56px 20px;
-  margin: auto 0;
+  padding: 40px 20px;
+  margin: auto;
   text-align: center;
 }
 
@@ -1258,11 +1266,11 @@ body {
 }
 
 .inv-live-label {
-  font-size: 0.7rem;
-  color: var(--text-subtle);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  font-weight: 600;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 500;
 }
 
 .invariant-live-expr {
@@ -1420,20 +1428,23 @@ body {
   bottom: 16px;
   left: 50%;
   transform: translateX(-50%);
+  width: -webkit-fit-content;
+  width: -moz-fit-content;
   width: fit-content;
-  max-width: min(96%, 1080px);
+  max-width: calc(100vw - 32px);
   z-index: 100;
-  background: rgba(14, 19, 29, 0.9);
+  background: rgba(14, 19, 29, 0.94);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-full);
   box-shadow: 0 10px 28px -4px rgba(0, 0, 0, 0.45);
   -webkit-backdrop-filter: blur(16px);
   backdrop-filter: blur(16px);
-  padding: 6px 18px;
+  padding: 5px 14px;
+  box-sizing: border-box;
 }
 
 [data-theme="light"] .demo-remote-bar {
-  background: rgba(255, 255, 255, 0.92);
+  background: rgba(255, 255, 255, 0.95);
   box-shadow: 0 8px 24px -4px rgba(15, 23, 42, 0.12);
   border-color: rgba(203, 213, 225, 0.9);
 }
@@ -1441,35 +1452,40 @@ body {
 .remote-inner {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 14px;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: nowrap;
 }
 
 .remote-section {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
+  flex-shrink: 0;
 }
 
 .remote-label {
-  font-size: 0.73rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--text-subtle);
+  font-size: 0.74rem;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--text-muted);
   white-space: nowrap;
+  margin-right: 2px;
 }
 
 .remote-divider {
   width: 1px;
-  height: 20px;
+  height: 18px;
   background: var(--border-hairline);
+  margin: 0 2px;
+  flex-shrink: 0;
 }
 
 .btn-scenario {
-  padding: 5px 12px;
+  padding: 4px 10px;
   border-radius: var(--radius-full);
-  font-size: 0.76rem;
+  font-size: 0.74rem;
   font-weight: 600;
   border: 1px solid var(--border-hairline);
   background: var(--bg-card);
@@ -1523,17 +1539,18 @@ body {
 /* Time Travel Remote Controls */
 .time-quick-jumps {
   display: flex;
-  gap: 4px;
+  gap: 3px;
+  flex-shrink: 0;
 }
 
 .btn-time-jump {
-  padding: 5px 9px;
-  min-height: 28px;
+  padding: 4px 7px;
+  min-height: 26px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   border-radius: var(--radius-full);
-  font-size: 0.74rem;
+  font-size: 0.73rem;
   font-family: var(--font-mono);
   background: var(--bg-subtle);
   border: 1px solid var(--border-hairline);
@@ -1582,7 +1599,9 @@ body {
 .time-slider-wrapper {
   display: flex;
   align-items: center;
-  width: 120px;
+  width: 80px;
+  flex-shrink: 0;
+  padding: 0 4px 0 2px;
 }
 
 .timeline-range {
@@ -1595,6 +1614,7 @@ body {
   outline: none;
   cursor: pointer;
   transition: var(--transition-fast);
+  margin: 0;
 }
 
 .timeline-range::-webkit-slider-thumb {
@@ -1629,6 +1649,22 @@ body {
 .timeline-range::-moz-range-thumb:active {
   cursor: grabbing;
   transform: scale(1.18);
+}
+
+@media (max-width: 980px) {
+  .demo-remote-bar {
+    max-width: calc(100vw - 20px);
+    overflow-x: auto;
+    scrollbar-width: none;
+    border-radius: var(--radius-lg);
+    justify-content: flex-start;
+  }
+  .demo-remote-bar::-webkit-scrollbar {
+    display: none;
+  }
+  .remote-inner {
+    min-width: max-content;
+  }
 }
 
 /* Phản hồi xúc giác cơ học (:active) & Accessibility (:focus-visible) */

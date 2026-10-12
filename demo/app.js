@@ -562,28 +562,23 @@ function render() {
   setDisabled('btnClaim', !(state === 'Successful' && wallet.id === 'creator'));
   setDisabled('btnRefund', !(state === 'Failed' && mine > 0));
 
-  // ---- 7. Gợi ý điều kiện: chỉ nêu cái CÒN THIẾU, không nhắc lại trạng thái
+  // ---- 7. Gợi ý điều kiện: ngắn gọn, sắc nét 1 dòng
   const claimHint = document.getElementById('claimConditionHint');
   if (claimHint) {
     claimHint.className = 'condition-hint';
     if (appState.claimed) {
       claimHint.classList.add('hint-ready');
-      claimHint.textContent = 'Đã giải ngân xong cho chủ dự án.';
+      claimHint.textContent = '✓ Đã giải ngân hoàn tất cho Chủ dự án.';
     } else if (wallet.id !== 'creator') {
-      claimHint.textContent = `Chỉ Chủ dự án mới có quyền rút vốn khi đủ điều kiện. Bạn đang kết nối: ${wallet.name} (Backer).`;
+      claimHint.textContent = `Chỉ Chủ dự án rút vốn khi đủ điều kiện. (Bạn là: ${wallet.name})`;
     } else if (state === 'Successful') {
       claimHint.classList.add('hint-ready');
-      claimHint.textContent = `Đủ điều kiện. Rút được ${appState.pledgedEth.toFixed(2)} ETH.`;
+      claimHint.textContent = `✓ Đủ điều kiện. Sẵn sàng rút ${appState.pledgedEth.toFixed(2)} ETH.`;
     } else if (!pastDeadline) {
-      // Nêu đích danh điều kiện đang chặn, và tình trạng của điều kiện còn lại —
-      // hai nút kết toán chờ ở hai cửa khác nhau nên không được nói cùng một câu.
-      const goalPart = goalMet
-        ? `Điều kiện vốn đã thoả (${appState.pledgedEth.toFixed(2)}/${appState.goalEth.toFixed(2)} ETH).`
-        : `Điều kiện vốn cũng chưa thoả (${appState.pledgedEth.toFixed(2)}/${appState.goalEth.toFixed(2)} ETH).`;
-      claimHint.textContent =
-        `Chặn bởi điều kiện thời gian — còn ${(DEADLINE_DAYS - days).toFixed(1)} ngày. ${goalPart}`;
+      const remainingDays = (DEADLINE_DAYS - days).toFixed(1);
+      claimHint.textContent = `Chưa hết hạn (còn ${remainingDays}d) · ${goalMet ? 'Mục tiêu: Đã đạt' : 'Mục tiêu: Chưa đạt'}`;
     } else {
-      claimHint.textContent = `Qua hạn rồi nhưng chỉ đạt ${appState.pledgedEth.toFixed(2)}/${appState.goalEth.toFixed(2)} ETH — claim() hoàn tác.`;
+      claimHint.textContent = `Hết hạn nhưng không đạt mục tiêu (${appState.pledgedEth.toFixed(2)}/${appState.goalEth.toFixed(2)} ETH).`;
     }
   }
 
@@ -593,17 +588,15 @@ function render() {
     if (state === 'Failed') {
       if (mine > 0) {
         refundHint.classList.add('hint-ready');
-        refundHint.textContent = `Đủ điều kiện. Ví này nhận lại ${mine.toFixed(2)} ETH.`;
+        refundHint.textContent = `✓ Đủ điều kiện. Bạn nhận lại ${mine.toFixed(2)} ETH.`;
       } else {
-        refundHint.textContent = `Ví ${wallet.name} không có khoản góp nào trong chiến dịch.`;
+        refundHint.textContent = `Ví ${wallet.name} không có khoản góp nào để hoàn tiền.`;
       }
     } else if (!pastDeadline) {
-      // Cùng bị điều kiện thời gian chặn, nhưng nói rõ hoàn tiền còn cần
-      // chiến dịch THẤT BẠI — thiếu mục tiêu — chứ không chỉ hết hạn.
-      refundHint.textContent =
-        `Chặn bởi điều kiện thời gian — còn ${(DEADLINE_DAYS - days).toFixed(1)} ngày. Hoàn tiền chỉ mở khi hết hạn mà không đủ mục tiêu.`;
+      const remainingDays = (DEADLINE_DAYS - days).toFixed(1);
+      refundHint.textContent = `Chưa hết hạn (còn ${remainingDays}d) · Chỉ mở khi hết hạn mà thiếu vốn.`;
     } else {
-      refundHint.textContent = `Chiến dịch đã đạt mục tiêu — không mở hoàn tiền.`;
+      refundHint.textContent = 'Chiến dịch thành công · Không mở hoàn tiền.';
     }
   }
 
@@ -613,11 +606,11 @@ function render() {
     unpledgeHint.className = 'condition-hint';
     if (mine > 0 && !pastDeadline) {
       unpledgeHint.classList.add('hint-ready');
-      unpledgeHint.textContent = `Khả dụng: Bạn có thể hủy góp và nhận lại ${mine.toFixed(2)} ETH trước deadline.`;
+      unpledgeHint.textContent = `✓ Sẵn sàng hủy góp và nhận lại ${mine.toFixed(2)} ETH.`;
     } else if (pastDeadline) {
-      unpledgeHint.textContent = 'Đã hết hạn: Không thể hủy góp (dùng Hoàn tiền nếu dự án thất bại).';
+      unpledgeHint.textContent = 'Đã hết hạn: Không thể hủy góp (dùng Hoàn tiền nếu thất bại).';
     } else {
-      unpledgeHint.textContent = 'Chỉ mở khi bạn đã đóng góp (> 0 ETH) và chiến dịch còn hạn.';
+      unpledgeHint.textContent = 'Khả dụng khi bạn đã góp (> 0 ETH) và chiến dịch còn hạn.';
     }
   }
 
