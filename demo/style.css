@@ -248,6 +248,31 @@ body {
   gap: 8px;
 }
 
+.btn-copy-addr {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-md);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.btn-copy-addr:hover {
+  color: var(--color-primary);
+  border-color: var(--border-focus);
+  background: var(--bg-card);
+}
+
+.btn-copy-addr .copy-icon {
+  width: 14px;
+  height: 14px;
+}
+
 .role-badge {
   display: inline-flex;
   align-items: center;
@@ -514,7 +539,26 @@ body {
   border-radius: var(--radius-full);
   transform-origin: left center;
   transform: scaleX(var(--p, 0));
-  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), background 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* Hiệu ứng vượt mục tiêu (Oversubscription > 100%) */
+.hero-meter-fill.is-oversubscribed {
+  background: linear-gradient(90deg, #10b981 0%, #06b6d4 60%, #a855f7 100%);
+  box-shadow: 0 0 14px rgba(168, 85, 247, 0.45);
+}
+
+.cond-badge.is-oversubscribed {
+  background: rgba(168, 85, 247, 0.14) !important;
+  color: #c084fc !important;
+  border-color: rgba(168, 85, 247, 0.4) !important;
+  font-weight: 700;
+}
+
+[data-theme="light"] .cond-badge.is-oversubscribed {
+  background: #f3e8ff !important;
+  color: #7e22ce !important;
+  border-color: #d8b4fe !important;
 }
 
 /* Time Meta Sub-row */
@@ -1085,6 +1129,39 @@ body {
   font-weight: 600;
   color: var(--text-main);
   font-size: 0.8rem;
+}
+
+.btn-inline-copy {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  padding: 1px 5px;
+  margin-top: 1px;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.btn-inline-copy:hover {
+  background: var(--bg-subtle);
+  border-color: var(--border-hairline);
+  color: var(--color-primary);
+}
+
+.inline-copy-icon {
+  width: 11px;
+  height: 11px;
+  opacity: 0.6;
+  transition: opacity var(--transition-fast);
+}
+
+.btn-inline-copy:hover .inline-copy-icon {
+  opacity: 1;
 }
 
 .amt-cell {
@@ -1803,4 +1880,52 @@ input:focus-visible,
 @keyframes toastOut {
   from { opacity: 1; transform: scale(1); }
   to { opacity: 0; transform: translateY(-10px) scale(0.96); }
+}
+
+/* --------------------------------------------------------------------------
+   10. MÁY CHIẾU GIẢNG ĐƯỜNG & MÀN HÌNH CHIỀU CAO HẸP (HEIGHT <= 850px)
+   -------------------------------------------------------------------------- */
+@media (max-height: 850px) {
+  .app-layout {
+    padding-top: 10px;
+    padding-bottom: 70px;
+    gap: 10px;
+  }
+  .top-nav {
+    padding: 8px 16px;
+    margin-bottom: 6px;
+  }
+  .campaign-hero-card {
+    padding: 16px 20px;
+  }
+  .dashboard-grid {
+    gap: 14px;
+  }
+  .metrics-strip {
+    margin-bottom: 12px;
+    gap: 8px;
+  }
+  .metric-cell {
+    padding: 8px 10px;
+  }
+  .action-cockpit {
+    gap: 12px;
+  }
+  .action-pod {
+    padding: 12px 14px;
+  }
+  .demo-remote-bar {
+    bottom: 8px;
+    padding: 6px 14px;
+  }
+  .contract-spec-drawer {
+    margin-top: 8px;
+    padding-top: 6px;
+  }
+  .tabs-card .right-tab-pane {
+    padding: 12px 14px;
+  }
+  .empty-state-box {
+    padding: 24px 12px;
+  }
 }

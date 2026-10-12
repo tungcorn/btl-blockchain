@@ -505,11 +505,21 @@ function render() {
 
   // ---- 2. Bất biến 1: vốn.  pledged >= goal
   const goalMet = appState.pledgedEth >= appState.goalEth;
+  const isOversubscribed = appState.pledgedEth > appState.goalEth;
   setText('goalCurrent', `${appState.pledgedEth.toFixed(2)} ETH`);
   setText('goalTarget', `${appState.goalEth.toFixed(2)} ETH`);
-  setInvariant('invGoal', 'condGoal', 'condGoalText', goalMet,
-    goalMet ? 'đã thoả' : 'chưa thoả');
+  const goalLabel = !goalMet
+    ? 'chưa thoả'
+    : (isOversubscribed ? `đã thoả (+${(appState.pledgedEth - appState.goalEth).toFixed(2)} ETH)` : 'đã thoả');
+  setInvariant('invGoal', 'condGoal', 'condGoalText', goalMet, goalLabel);
+
+  const goalBadge = document.getElementById('condGoal');
+  if (goalBadge) goalBadge.classList.toggle('is-oversubscribed', isOversubscribed);
+
+  const goalFill = document.getElementById('boltGoalFill');
+  if (goalFill) goalFill.classList.toggle('is-oversubscribed', isOversubscribed);
   setFill('boltGoalFill', Math.min(1, appState.pledgedEth / appState.goalEth));
+
   setExpr('exprGoal',
     `pledged >= goal`,
     `${appState.pledgedEth.toFixed(2)} >= ${appState.goalEth.toFixed(2)} ETH`,
@@ -644,6 +654,41 @@ function setFill(id, ratio) {
   el.style.setProperty('--p', String(Math.max(0, Math.min(1, ratio))));
 }
 
+/** Sao chép nội dung vào Clipboard kèm fallback và thông báo Toast */
+function copyToClipboard(text, label) {
+  if (!text) return;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(() => {
+      notify('ok', `Đã sao chép ${label || 'địa chỉ'}: ${text.slice(0, 6)}…${text.slice(-4)} vào clipboard.`);
+    }).catch(() => {
+      fallbackCopy(text, label);
+    });
+  } else {
+    fallbackCopy(text, label);
+  }
+}
+
+function fallbackCopy(text, label) {
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed';
+  ta.style.opacity = '0';
+  document.body.appendChild(ta);
+  ta.select();
+  try {
+    document.execCommand('copy');
+    notify('ok', `Đã sao chép ${label || 'địa chỉ'}: ${text.slice(0, 6)}…${text.slice(-4)}`);
+  } catch (err) {
+    notify('warn', `Không thể tự động sao chép: ${text}`);
+  }
+  document.body.removeChild(ta);
+}
+
+function copyActiveWallet() {
+  const wallet = SIM_WALLETS[appState.activePersonaId] || SIM_WALLETS.alice;
+  copyToClipboard(wallet.address, `ví ${wallet.name}`);
+}
+
 /**
  * Bật/tắt một bất biến và huy hiệu của nó.
  * Huy hiệu luôn mang cả biểu tượng lẫn nhãn chữ — màu không bao giờ
@@ -698,8 +743,14 @@ function renderBackersTable(backers) {
     return `
       <tr>
         <td class="addr-cell">
-          ${name ? `<span class="who-cell">${name}</span>` : ''}
-          ${name ? '<br>' : ''}${short}
+          ${name ? `<span class="who-cell">${name}</span><br>` : ''}
+          <button type="button" class="btn-inline-copy" onclick="copyToClipboard('${addr}', '${name || short}')" title="Sao chép địa chỉ ví ${addr}">
+            <code>${short}</code>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="inline-copy-icon" aria-hidden="true">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+            </svg>
+          </button>
         </td>
         <td class="amt-cell">${amt.toFixed(2)} ETH</td>
         <td><span class="share-pill">${share}%</span></td>
@@ -1177,3 +1228,5 @@ window.web3Pledge = web3Pledge;
 window.web3Unpledge = web3Unpledge;
 window.web3Claim = web3Claim;
 window.web3Refund = web3Refund;
+window.copyToClipboard = copyToClipboard;
+window.copyActiveWallet = copyActiveWallet;
