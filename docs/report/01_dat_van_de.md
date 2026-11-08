@@ -4,59 +4,50 @@
 
 ## 1.1. Bối cảnh đề tài
 
-Gọi vốn cộng đồng (Crowdfunding) là hình thức huy động các khoản đóng góp tài chính nhỏ từ một số lượng lớn các cá nhân để tài trợ cho một dự án, sáng kiến kinh doanh hoặc hoạt động xã hội. Trong kỷ nguyên Web 2.0, các nền tảng gọi vốn truyền thống như Kickstarter, Indiegogo, hay GoFundMe đã tạo ra những cú hích kinh tế khổng lồ, hỗ trợ hàng trăm nghìn dự án khởi nghiệp tiếp cận vốn mà không cần phụ thuộc vào các quỹ đầu tư mạo hiểm (Venture Capital) truyền thống.
+Gọi vốn cộng đồng huy động nhiều khoản đóng góp để tài trợ cho một dự án. Với mô hình tập trung, người dùng cần tin nền tảng lưu giữ tiền, thực hiện điều kiện giải ngân/hoàn tiền và cung cấp thông tin chính xác. Phí và chính sách khác nhau giữa nền tảng; báo cáo không suy ra một mức phí chung khi chưa khảo sát có nguồn.
 
-Tuy nhiên, mô hình gọi vốn tập trung (Centralized Crowdfunding) đang bộc lộ những rào cản mang tính cố hữu về mặt cấu trúc và độ tin cậy:
-* **Chi phí trung gian cao:** Các nền tảng Web 2.0 thường thu mức phí dao động từ **5% đến 8%** trên tổng số tiền gọi được, chưa bao gồm phí xử lý thanh toán của ngân hàng (thêm 3% – 5%).
-* **Quyền lực kiểm soát tập trung:** Các nền tảng máy chủ trung tâm có toàn quyền đơn phương đóng băng tài khoản, hoãn giải ngân hoặc từ chối chuyển tiền vì các lý do pháp lý, chính sách khu vực hoặc xung đột lợi ích.
-* **Rủi ro thiếu minh bạch tài chính:** Người đóng góp (Backers) hoàn toàn mất dấu dòng tiền sau khi chuyển cho sàn trung gian. Không có cơ chế mật mã nào bảo đảm rằng chủ dự án chỉ được nhận tiền khi chiến dịch thành công và ngược lại, người ủng hộ sẽ tự động nhận lại 100% tiền nếu chiến dịch thất bại.
-* **Nguy cơ lừa đảo (Scam & Rug Pull):** Tình trạng chủ dự án gom tiền rồi biến mất mà không chịu bất kỳ ràng buộc hợp đồng bằng mã nguồn nào.
+Smart contract cho phép công khai một phần quy tắc giữ và chuyển tiền, để người dùng đối chiếu code, state và event. Tuy nhiên điều này không tự loại bỏ rủi ro khóa riêng, ví, giao diện/RPC, lỗi code hoặc việc chủ dự án không thực hiện cam kết sau giải ngân.
 
 ---
 
 ## 1.2. Bài toán đặt ra
 
-Sự xuất hiện của công nghệ Blockchain và **Hợp đồng thông minh (Smart Contract)** trên nền tảng Ethereum đã mở ra giải pháp mang tính đột phá: **Gọi vốn cộng đồng phi tập trung (Decentralized Crowdfunding)**.
+**Đề W:** xây dựng contract crowdfunding có mục tiêu vốn và hạn thời gian.
 
-Bài toán cốt lõi cần giải quyết bao gồm:
-1. **Loại bỏ hoàn toàn trung gian (Trustless Execution):** Toàn bộ quỹ tiền được ký quỹ (Escrow) trực tiếp trong một hợp đồng thông minh. Không một cá nhân, tổ chức hay thậm chí người tạo hợp đồng nào có thể tùy tiện rút tiền nếu chưa thỏa mãn các quy tắc logic được định nghĩa trước.
-2. **Cơ chế ràng buộc Mục tiêu vốn (Target Goal):**
-   * Dự án phải đạt được số tiền tối thiểu cam kết trước khi hết hạn mới được xem là thành công.
-   * Nếu đạt chỉ tiêu (`pledged >= goal`), chủ dự án mới có quyền rút vốn giải ngân.
-3. **Cơ chế ràng buộc Hạn thời gian (Deadline):**
-   * Chiến dịch chỉ mở nhận vốn trong một khoảng thời gian xác định (`startAt` &rarr; `endAt`).
-   * Khi hết hạn, cổng đóng góp phải tự động đóng lại để bảo vệ tính toàn vẹn của quỹ.
-4. **Cơ chế hoàn tiền tự động và an toàn (Guaranteed Refund):**
-   * Nếu chiến dịch kết thúc mà không đạt mục tiêu, hợp đồng phải bảo đảm quyền lợi tuyệt đối cho người ủng hộ: mỗi cá nhân đều có thể rút lại đúng 100% số tiền mình đã góp mà không bị khấu trừ bất kỳ khoản phí trung gian nào.
-5. **Bảo mật và Tối ưu hóa chi phí (Security & Gas Optimization):**
-   * Ngăn chặn triệt để các lỗ hổng smart contract kinh điển như tấn công tái nhập (Reentrancy), từ chối dịch vụ (DoS with unexpected revert), và thao túng mốc thời gian khối (Timestamp manipulation).
-   * Giảm thiểu tối đa chi phí gas khi giao dịch trên mạng lưới Ethereum.
+1. **Ký quỹ và ghi nhận:** tiền ETH nằm tại contract; từng khoản góp được ghi theo địa chỉ, cùng tổng `pledged`.
+2. **Góp/rút trước hạn:** khi `block.timestamp < endAt`, người dùng góp ETH dương hoặc rút một phần/toàn bộ khoản của chính họ. Đủ vốn sớm chưa đóng chiến dịch và chưa cho creator claim.
+3. **Giải ngân:** tại/sau deadline, chỉ creator được claim nếu pledged đạt goal và chưa claim trước đó. Hết hạn không tự gửi ETH; cần giao dịch gọi hàm.
+4. **Hoàn tiền:** tại/sau deadline khi chưa đạt goal, từng backer tự gọi refund để nhận khoản còn ghi nhận, không có vòng lặp hoàn tiền toàn bộ. Người gửi vẫn trả phí gas; contract không khấu trừ phí nền tảng nhưng cũng không hoàn phí mạng đã trả.
+5. **Kiểm soát rủi ro:** kiểm tra quyền/điều kiện trong Solidity, cập nhật sổ sách trước external call, dùng guard và xử lý chuyển ETH thất bại. Đánh giá bằng test và phân tích tĩnh có phạm vi, không cam kết loại bỏ mọi lỗi.
 
 ---
 
-## 1.3. Các vấn đề liên quan và khảo sát thực tế
+## 1.3. Các vấn đề liên quan
 
-Trong không gian Web3, các giao thức gọi vốn phi tập trung đã có những bước tiến đáng kể:
-* **Mô hình All-or-Nothing (Được ăn cả, ngã về không):** Hợp đồng chỉ giải ngân khi đủ 100% mục tiêu. Nếu thiếu dù chỉ 0.01 ETH, toàn bộ số tiền sẽ mở cho người dùng rút lại. Đây là mô hình công bằng nhất, giúp người ủng hộ không bị rủi ro tài trợ cho một dự án thiếu vốn trầm trọng dẫn đến không thể hoàn thiện sản phẩm.
-* **Lỗ hổng The DAO (2016):** Bài học lịch sử của Ethereum khi một quỹ gọi vốn cộng đồng phi tập trung bị hacker rút cạn 3.6 triệu ETH thông qua lỗ hổng Reentrancy trong hàm hoàn tiền/rút vốn. Điều này khẳng định tính an ninh trong logic hợp đồng Crowdfunding là ưu tiên số một.
-* **Vấn đề DoS trong cơ chế Push Refund:** Nhiều dự án sơ khai sử dụng vòng lặp duyệt qua danh sách hàng nghìn người để gửi trả tiền (Push). Khi gặp một smart contract cố tình revert, toàn bộ quỹ bị treo vĩnh viễn. Cần thiết phải chuyển dịch sang mô hình **Pull Payment** (tự rút).
+* **All-or-Nothing:** điều kiện giải ngân dựa trên goal và deadline; nếu thiếu dù một wei tại hạn thì không đạt goal. Nếu có khoản góp mới làm đạt goal trước hạn, kết quả có thể đổi. Contract chỉ thực thi quy tắc này, không đánh giá tính khả thi của dự án.
+* **Reentrancy:** khi chuyển ETH bằng call, contract nhận có thể chạy code và gọi ngược lại. Cần giải thích CEI và guard bằng thứ tự thực thi thực tế, thay vì coi mọi callback là cùng một kiểu tấn công.
+* **Push/Pull:** một giao dịch push có thể bị lỗi người nhận hoặc giới hạn gas làm thất bại; Pull tách giao dịch từng người. Người nhận không thể nhận ETH vẫn có giới hạn riêng.
+* **Thời gian và xử lý giao dịch:** Ethereum PoS xác định timestamp theo slot; người dùng không được bảo đảm giao dịch gửi sát hạn sẽ kịp vào block.
+* **Sổ sách và balance:** forced ETH và quyết toán làm hai khái niệm có thể khác nhau. Không dùng một đẳng thức balance đơn giản để tuyên bố an toàn mọi trạng thái.
 
 ---
 
-## 1.4. Mục tiêu và Phạm vi nghiên cứu của đề tài
+## 1.4. Mục tiêu và phạm vi nghiên cứu
 
-### Mục tiêu đề tài:
-* **Về mặt lý thuyết:** Nghiên cứu kiến trúc máy ảo EVM, cơ chế quản lý trạng thái, mô hình Checks-Effects-Interactions (CEI), và các giải pháp an ninh phòng thủ trên Solidity `^0.8.20`.
-* **Về mặt kỹ thuật:**
-  * Xây dựng hợp đồng `Crowdfunding.sol` hoàn chỉnh, hỗ trợ mục tiêu vốn, hạn thời gian, cơ chế nạp, rút cọc sớm, rút vốn và hoàn tiền.
-  * Xây dựng hợp đồng mở rộng `CrowdfundingFactory.sol` đóng vai trò Launchpad quản lý hàng loạt chiến dịch độc lập.
-  * Xây dựng bộ kiểm thử tự động hai tầng (Unit Test) 52 kịch bản — 18 Mock + 34 Hardhat EVM — bao phủ 100% các điều kiện biên.
-  * Phát triển giao diện Web DApp trực quan hóa **2 Trục Tiến Độ (Tiền vốn & Dòng thời gian Blockchain)**, hỗ trợ cả môi trường mô phỏng Sandbox tức thì và kết nối ví MetaMask trên testnet Sepolia.
+### Mục tiêu
+* Giải thích Ethereum/EVM, account, wei, storage/mapping, timestamp, gas, phân quyền và giao dịch Web3 qua một bài toán cụ thể.
+* Triển khai `Crowdfunding.sol` và factory tạo các campaign độc lập.
+* Kiểm thử bằng 18 test mô hình JavaScript và 41 test Hardhat EVM; số lượng test không phải coverage 100%. Dùng test để đối chiếu thành công, điều kiện bị từ chối và biên quan trọng.
+* Cung cấp sandbox và connector MetaMask để hỗ trợ trình bày. Phân biệt rõ minh họa JavaScript, thực thi EVM cục bộ và giao dịch thực trên mạng kết nối.
+* Phân chia ba thành viên theo luồng góp vốn — giải ngân — hoàn tiền/an toàn, mỗi người có lý thuyết, Solidity, test và phần báo cáo riêng.
 
-### Phạm vi và Ca sử dụng thực nghiệm (Case Study):
-Để kiểm chứng hệ thống trong môi trường trực quan, nhóm lựa chọn kịch bản ứng dụng mẫu:  
-**"Dự Án Orbit: Trạm Tiếp Sóng Vệ Tinh Phi Tập Trung"**
-* **Chủ dự án (Creator):** Địa chỉ ví `0x90F79bf6EB2c4f870365E785982E1f101E93b906`.
-* **Mục tiêu vốn (Goal):** 10.00 ETH.
-* **Thời hạn chiến dịch (Duration):** 7 ngày (604,800 giây).
-* **Đơn vị tiền tệ:** Native ETH (chuyển giao trực tiếp trên EVM).
+### Ca thực nghiệm minh họa
+**Dự án Orbit** là tên chiến dịch mẫu trong sandbox, không phải bằng chứng một dự án/ví thực tế đã deploy trên Sepolia.
+
+* Creator: persona giả lập trong demo; địa chỉ hiển thị không chứng minh nhóm kiểm soát khóa tương ứng trên mạng thật.
+* Goal: 10 ETH; thời lượng mẫu: 7 ngày (604.800 giây). Constructor thực tế cho phép duration dương đến 365 ngày.
+* Tài sản: native ETH; giá trị trong contract tính bằng wei.
+* Kịch bản đủ vốn: 4 + 3 + 3 ETH ở ngày 6.9, rồi tới đúng 7.0 để kiểm tra quyền claim.
+* Kịch bản thất bại: 3/10 ETH ở ngày 7.2; kịch bản vượt mục tiêu riêng: 12/10 ETH.
+
+Triển khai không có giải ngân theo milestone, DAO voting hoặc token ERC-20. Những tính năng này chỉ là hướng mở rộng. Báo cáo kết quả kiểm thử không thay thế audit hay chứng minh dự án sử dụng vốn đúng mục đích.

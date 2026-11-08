@@ -40,11 +40,45 @@ contract ReentrancyAttacker {
 }
 
 /// @notice Forces ETH into a target address via constructor selfdestruct.
-/// @dev After EIP-6780 (Cancun), selfdestruct only transfers balance when the
-///      destructed contract was created in the same transaction — which this is,
-///      so this vector works on both pre- and post-Cancun EVMs.
+/// @dev EIP-6780 preserves balance transfer even for older contracts. Only code,
+///      storage and account deletion require creation in the same transaction.
+///      This constructor example works on both pre- and post-Cancun EVMs.
 contract ForceEther {
     constructor(address payable target) payable {
         selfdestruct(target);
+    }
+}
+
+/// @notice TEST-ONLY receiver for proving TransferFailed rollback and retry.
+/// @dev Deliberately permissionless controls; never use as a production wallet.
+contract RejectingReceiver {
+    bool public rejectEther = true;
+
+    function setRejectEther(bool reject) external {
+        rejectEther = reject;
+    }
+
+    function pledge(Crowdfunding campaign) external payable {
+        campaign.pledge{value: msg.value}();
+    }
+
+    function unpledge(Crowdfunding campaign, uint256 amount) external {
+        campaign.unpledge(amount);
+    }
+
+    function claim(Crowdfunding campaign) external {
+        campaign.claim();
+    }
+
+    function refund(Crowdfunding campaign) external {
+        campaign.refund();
+    }
+
+    function sweep(Crowdfunding campaign) external {
+        campaign.sweepExcessEther();
+    }
+
+    receive() external payable {
+        require(!rejectEther, "Test receiver rejects ETH");
     }
 }

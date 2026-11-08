@@ -1,124 +1,120 @@
-# Decentralized Crowdfunding • Smart Contract & Web3 DApp
+# Decentralized Crowdfunding • Smart Contract & Web3 Demo
 
-An enterprise-grade, secure decentralized **Crowdfunding Smart Contract platform with target funding goal and deadline**, engineered for group evaluation and live demonstration (**Nhóm C • Đề W • Max Score: 10/10**).
+Blockchain coursework for a three-person group: **Đề W — crowdfunding with a funding goal and deadline**. The repository includes Solidity contracts, local EVM tests, a JavaScript sandbox, and a MetaMask connector. This is an educational implementation, not an independently audited production platform.
 
-<p align="center">
-  <a href="demo/index.html">
-    <img src="https://img.shields.io/badge/LIVE_DAPP-Open_Web_Visualizer-00f0ff?style=for-the-badge&logo=googlechrome&logoColor=black" alt="Open Web DApp">
-  </a>
-  <a href="contracts/Crowdfunding.sol">
-    <img src="https://img.shields.io/badge/SOLIDITY-0.8.20-f59e0b?style=for-the-badge&logo=solidity&logoColor=black" alt="Solidity">
-  </a>
-  <a href="test/Crowdfunding.test.js">
-    <img src="https://img.shields.io/badge/TESTS-52%2F52%20PASS_(Mock_18_%2B_EVM_34)-10b981?style=for-the-badge&logo=checkmarx&logoColor=black" alt="Tests">
-  </a>
-  <a href="docs/group_report.md">
-    <img src="https://img.shields.io/badge/GROUP_REPORT-Grade_10%20Cheatsheet-a855f7?style=for-the-badge&logo=read-the-docs&logoColor=white" alt="Group Report">
-  </a>
-</p>
+## Quick start
 
----
+### 1. Web demo
+Open [demo/index.html](demo/index.html) in a browser, or serve locally:
 
-## ⚡ Quick Start
+```bash
+npm run serve
+# or: npx serve demo
+```
 
-### 1. Interactive Web DApp (Dual Mode: Sandbox + MetaMask)
-* **Open in Browser**: Simply double click or open [`demo/index.html`](file:///d:/Hoc/BlockChain/lab02-crowdfunding-smart-contract/demo/index.html) in Chrome/Firefox/Edge.
-* **Serve locally via Node.js**:
-  ```bash
-  npm run serve
-  # or: npx serve demo
-  ```
-  *Features:*
-  - **Zero-Wait Sandbox Mode**: Switch between Creator, Alice, Bob, and Charlie. Fast-forward the block clock by 7 days to trigger success or refund states without waiting.
-  - **MetaMask Web3 Mode**: Connect to live Sepolia Testnet or Local Hardhat/Anvil node and control real deployed smart contracts.
+* **Sandbox:** JavaScript simulation with Creator/Alice/Bob/Charlie and controllable simulated time. It does not execute Solidity or change a blockchain timestamp.
+* **MetaMask:** interact with a deployed campaign on a supported connected network. Confirm the chain ID and contract address. Browser tests with a mocked provider do not prove a real wallet transaction was signed/broadcast.
+* The classroom layout prioritizes desktop/projector use, with light/dark themes, funding/time/permission guards, contribution accounting and separate RPC status/transaction history.
 
-### 2. Automated Test Suite — Two-Layer Architecture (52 Test Cases • 100% Pass)
-Run the built-in dual-layer test runner:
+### 2. Tests
+
 ```bash
 npm test
-# or layer-by-layer:
-npm run test:mock    # Layer 1: 18 spec-based Mock cases (no EVM required)
-npm run test:evm     # Layer 2: 34 Hardhat EVM cases (real Crowdfunding.sol bytecode)
-npm run test:coverage # optional: solidity-coverage report
+npm run test:mock     # 18 JavaScript model tests; no EVM execution
+npm run test:evm      # 41 Hardhat EVM tests
+npm run test:coverage # optional coverage measurement; not a claimed 100% result
 ```
-Layer 2 includes **real attack simulation** (`ReentrancyAttacker`, `ForceEther` via selfdestruct), a **deterministic invariant fuzz** (`pledged == Σ pledgedAmount && balance == pledged` over 80 random ops) and full `CrowdfundingFactory` coverage.
 
-### 2.1 Static Security Analysis (Slither)
+Verified on 2026-11-08: **18 model + 41 EVM tests pass**. Hardhat also discovers the model test file, so its console output appears again during the EVM command; this is not another 18 distinct tests.
+
+The EVM suite checks core flows, deadline/authorization boundaries, full withdrawal/re-pledging, transfer-failure rollback/retry, nested refund, forced ETH, and selected factory behavior. Its deterministic fuzz covers 80 active-period pledge/unpledge operations with four actors and seed `0xC0FFEE`; `balance == pledged` is checked only in that scope, not after claim or forced ETH. Test counts do not establish full statement/branch/custom-error coverage.
+
+Three representative tests per member, with commands and before/after evidence, are documented in [report section 3.3](docs/report/03_trien_khai_va_thuc_nghiem.md).
+
+### 3. Static analysis
+
 ```bash
-pip install slither-analyzer solc-select && solc-select install 0.8.20 && solc-select use 0.8.20
-npm run audit:static   # or: slither contracts --solc solc
+slither --version
+solc --version
+slither contracts/Crowdfunding.sol --solc solc
+slither contracts/CrowdfundingFactory.sol --solc solc
 ```
-Result: **0 Medium/High findings** — full triage in [`docs/security/slither-report.md`](docs/security/slither-report.md).
 
-### 3. CLI Architectural & Security Simulation
-Execute a comprehensive terminal-based simulation demonstrating campaign lifecycles and exploit defense:
+The recorded run uses Slither 0.11.6 and solc 0.8.20: **0 High/Medium**, 13 result instances for Crowdfunding and 16 for Factory including its dependency. There are four detector categories, not four findings; the runs overlap and must not be summed as independent issues. See [raw JSON, source hashes and triage](docs/security/slither-report.md). Static analysis is not an audit or a security guarantee.
+
+### 4. CLI simulation
+
 ```bash
 npm run simulate
-# or: node scripts/simulate.js
 ```
 
----
+The CLI is another model-based illustration; use the EVM suite to demonstrate Solidity behavior.
 
-## 🛡 Architectural & Security Highlights
+## Contract behavior and limitations
 
-| Security Principle | Implementation in Contract | Threat Mitigated |
-| :--- | :--- | :--- |
-| **Checks-Effects-Interactions (CEI)** | Resets `pledgedAmount[msg.sender] = 0` **before** making the external `.call{value: balance}("")`. | **Reentrancy Attack**: Malicious caller cannot recursively drain funds through fallback functions. |
-| **Pull-over-Push Payments** | Individual `refund()` triggered per backer rather than looping through all contributors. | **DoS with Revert**: A single reverting recipient contract cannot lock refunds for other participants. |
-| **Reentrancy Guard** | Explicit state lock (`_reentrancyStatus` mutex). | **Nested Call Exploit**: Double-layer barrier preventing concurrent re-entrant execution. |
-| **Custom Errors** | `error GoalNotReached()`, `error CampaignEnded()`, etc. | **Gas Optimization**: Replaces expensive string reverts with 4-byte selectors, saving ~15,000 gas per revert. |
-| **Immutable Storage** | `creator`, `goal`, `startAt`, `endAt` marked `immutable` (uint64 timestamps — safe past year 2106). | **Bytecode Embedding**: Gas reduction by avoiding SLOAD storage reads during critical transaction paths. |
-| **Forced-ETH Defense** | `sweepExcessEther()` withdraws only `balance - pledged`; `refund()` keeps the invariant `pledged == Σ pledgedAmount`. | **Bricked Funds**: ETH force-sent via selfdestruct can never lock backer refunds or strand dust in a FAILED campaign. |
-| **Precision Guard Placement** | `nonReentrant` only on functions with external calls (`unpledge`, `claim`, `refund`, `sweep`); `pledge`/`receive` rely on CEI alone (documented NatSpec trade-off). | **Gas Waste & Griefing**: saves ~5,800 gas/pledge and avoids reverting refunds for contract backers whose `receive()` auto-pledges. |
+| Topic | Implemented behavior |
+| --- | --- |
+| Contributions | `pledge()` and ordinary empty-calldata ETH transfers through `receive()` update per-address accounting before the deadline. Values are in wei. |
+| Early withdrawal | `unpledge(amount)` withdraws part/all of the caller's recorded contribution while `timestamp < endAt`. |
+| Settlement | Reaching the goal before the deadline still leaves the campaign Active. At/after the deadline, only the creator may claim if `pledged >= goal`. No automatic transaction runs when time passes. |
+| Successful claim | Transfers actual contract balance, including oversubscription/forced ETH present at claim time. The `claimed` flag changes; contribution accounting remains. |
+| Refund | After failure, each backer calls `refund()`. It pays the recorded contribution, not gas already spent. |
+| CEI and guard | Transfer functions use a custom storage-based guard, validate call success and revert on failure. Tests check rollback and retry at unpledge/claim/refund/sweep. This is not an imported OpenZeppelin guard. |
+| Forced ETH | SELFDESTRUCT can transfer ETH after EIP-6780; same-transaction creation concerns code/storage deletion. `sweepExcessEther()` allows only the creator to take positive `balance - pledged`, without requiring expiry. It is not a universal recovery mechanism for every post-settlement transfer. |
+| Accounting | `pledged == sum(pledgedAmount)` is distinct from actual balance. Forced ETH and successful claim demonstrate why balance need not equal pledged. |
+| Gas choices | Immutable values, custom errors and guard placement have technical motivations. No fixed gas saving is claimed without a controlled benchmark. |
 
----
+Passing tests and zero High/Medium static findings do not establish safety in every state. A receiver may reject ETH; refund isolation does not make that receiver capable of accepting funds. Contract escrow also does not guarantee project delivery after disbursement.
 
-## 📁 Project Structure
+## Classroom scenarios
+
+* **TV1:** reset, Alice pledges 3 ETH, withdraws 1 ETH, inspect the remaining 2 ETH and an invalid withdrawal.
+* **TV2:** the sufficient-funding preset creates **4 + 3 + 3 = 10 ETH at day 6.9**. Creator cannot claim yet. Select **7.0d**; compare an unauthorized wallet with the creator, then claim.
+* **TV3:** failed preset creates **3/10 ETH at day 7.2**; Alice refunds once. Use EVM tests, not sandbox animation, for rollback/reentrancy evidence.
+* **Optional oversubscription:** separate preset creates **12/10 ETH at day 7.2**. This is distinct from the 11 ETH EVM test.
+
+## Project structure
 
 ```text
-lab02-crowdfunding-smart-contract/
-├── contracts/
-│   ├── Crowdfunding.sol            # Core Smart Contract with CEI & ReentrancyGuard
-│   ├── CrowdfundingFactory.sol     # Factory Contract for launchpad multi-campaign deployment
-│   └── testing/
-│       └── Attackers.sol           # Test-only adversarial contracts (ReentrancyAttacker, ForceEther)
-├── test/
-│   ├── Crowdfunding.test.js        # Layer 1: 18 spec-based Mock cases (dependency-free)
-│   └── Crowdfunding.evm.test.js    # Layer 2: 34 Hardhat EVM cases on real bytecode + invariant fuzz
-├── hardhat.config.js               # Hardhat Network config (solc 0.8.20, optimizer 200 runs)
-├── scripts/
-│   └── simulate.js                 # Terminal CLI lifecycle & security attack simulation
-├── demo/
-│   ├── index.html                  # Cyberpunk dark Web3 UI (Dual-mode: Sim + real MetaMask)
-│   ├── style.css                   # Glassmorphism design system
-│   └── app.js                      # DApp controller, Sandbox sim + Ethers.js v6 MetaMask connector
-├── docs/
-│   ├── group_report.md             # Complete team report & defense Q&A
-│   ├── security/
-│   │   └── slither-report.md       # Slither static-analysis triage (0 Medium/High)
-│   └── report/                     # 4-chapter academic report (00–04, Vietnamese)
-├── package.json                    # Quick scripts (npm test, test:evm, audit:static, serve)
-└── README.md                       # Project documentation
+contracts/
+  Crowdfunding.sol               # Main campaign contract
+  CrowdfundingFactory.sol        # Independent campaigns and list pagination
+  testing/Attackers.sol          # Test-only callbacks/forced ETH/rejecting receiver
+test/
+  Crowdfunding.test.js           # 18 model tests
+  Crowdfunding.evm.test.js       # 41 EVM tests
+demo/                           # Desktop sandbox and MetaMask connector
+docs/
+  group_report.md               # Responsibilities, demo and oral-defense guide
+  report/                       # Four-part Vietnamese report
+  security/                     # Static-analysis report and raw JSON
+ hardhat.config.js              # solc 0.8.20; optimizer enabled, 200 runs
 ```
 
----
+Test helpers are not production wallets or deployment targets. `RejectingReceiver` deliberately has permissionless test controls.
 
-## 🚀 Sepolia Testnet Deployment Guide via Remix IDE
+## Sepolia deployment through Remix
 
-1. Navigate to [Remix IDE](https://remix.ethereum.org/).
-2. Copy [`contracts/Crowdfunding.sol`](file:///d:/Hoc/BlockChain/lab02-crowdfunding-smart-contract/contracts/Crowdfunding.sol) into Remix.
-3. Select compiler `0.8.20` and compile.
-4. On the **Deploy & Run Transactions** tab:
-   - Select **Injected Provider - MetaMask** (Ensure network is set to Sepolia).
-   - Enter constructor parameters:
-     - `_creator`: `0x0000000000000000000000000000000000000000` (defaults to your wallet).
-     - `_goal`: `1000000000000000000` (1 ETH in wei).
-     - `_durationSeconds`: `604800` (7 days) or `600` (10 minutes for testing).
-   - Click **Deploy**.
-5. Copy the deployed contract address and paste it into the **MetaMask Web3 Connector** in `demo/index.html` to interact directly through the Web UI!
+1. Open [Remix](https://remix.ethereum.org/) and copy [Crowdfunding.sol](contracts/Crowdfunding.sol).
+2. Select compiler **0.8.20**, compile and record the actual compiler/optimizer settings used.
+3. Choose **Injected Provider — MetaMask** with Sepolia selected.
+4. Set constructor arguments:
+   * `_creator`: intended beneficiary, or `0x0000000000000000000000000000000000000000` to use the deployer.
+   * `_goal`: wei, e.g. `1000000000000000000` for 1 ETH.
+   * `_durationSeconds`: 1–31,536,000 seconds; e.g. `600` for a 10-minute demo or `604800` for 7 days.
+5. Deploy, confirm in the wallet and record chain ID, contract address and deployment receipt. Paste the address into the Web3 connector.
+6. For any claimed live demonstration, retain transaction hashes/receipts and compare state before/after. Signed/pending is not confirmed; a mined reverted transaction can still cost gas. Reading `goal()` alone does not authenticate the target bytecode.
 
----
+## Group responsibilities — 3 members
 
-## 👥 Group Contribution Matrix (3–4 Members)
+Each member owns Solidity reasoning, relevant tests, report content, demo and oral defense for one Blockchain flow:
 
-See the complete breakdown, individual deliverables, and defense question cheatsheet in [docs/group_report.md](file:///d:/Hoc/BlockChain/lab02-crowdfunding-smart-contract/docs/group_report.md).
+| Member | Required core | Advanced follow-up |
+| --- | --- | --- |
+| 1 | Contributions/early withdrawal: `pledge`, `unpledge`, ETH/wei and mapping | `receive`, events and contributor counting |
+| 2 | Goal/deadline/state, creator permission and `claim` | Factory, pagination and gas choices |
+| 3 | `refund`, CEI, guard, rollback and refund isolation | Forced ETH, sweep, fuzz and Slither |
+
+Web3, UI and slides are shared supporting work, not any member's only technical topic. Each person prepares a before/after table and three representative EVM tests. This is a responsibility plan, not a claim of historical code authorship or verified contribution percentages.
+
+See [the detailed assignment and defense checklist](docs/group_report.md).

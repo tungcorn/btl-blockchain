@@ -1,76 +1,78 @@
-# BÁO CÁO PHÂN TÍCH TĨNH SLITHER (Static Analysis Audit)
+# BÁO CÁO PHÂN TÍCH TĨNH SLITHER
 
-**Phiên bản công cụ:** slither-analyzer (crytic) + solc-select
-**Compiler:** solc 0.8.20 (khớp pragma `^0.8.20`)
-**Phạm vi:** `contracts/Crowdfunding.sol`, `contracts/CrowdfundingFactory.sol`
-**Câu lệnh tái lập:**
+## 1. Phạm vi và cách tái lập
+
+- **Ngày chạy:** 2026-11-08.
+- **Slither:** 0.11.6.
+- **Compiler:** solc `0.8.20+commit.a1b79de6.Windows.msvc`.
+
+**Phạm vi:** `Crowdfunding.sol`, sau đó `CrowdfundingFactory.sol` và `Crowdfunding.sol` được import. Không chạy các helper kiểm thử trong `contracts/testing/` ở hai lệnh này.
 
 ```bash
-solc-select install 0.8.20 && solc-select use 0.8.20
-slither contracts --solc solc
+slither --version
+solc --version
+slither contracts/Crowdfunding.sol --solc solc --json docs/security/slither-crowdfunding.json --fail-none
+slither contracts/CrowdfundingFactory.sol --solc solc --json docs/security/slither-factory.json --fail-none
 ```
 
----
+`--fail-none` chỉ tránh dùng severity để quyết định exit code; không loại bỏ detector hoặc phát hiện khỏi JSON. Phải đọc `success`, `error` và `results.detectors` để xác định kết quả. Khi chạy lại, dùng tên output mới hoặc chủ động quản lý file cũ; Slither không ghi đè JSON đã tồn tại.
 
-## 1. Tổng quan kết quả
+**Raw output:** [Crowdfunding](slither-crowdfunding.json), [Factory và dependency](slither-factory.json). Hai file đều ghi `success: true`, `error: null`. Mỗi lượt chạy sử dụng 102 detectors; điều đó không đồng nghĩa phát hiện mọi loại lỗi.
 
-| Mức độ nghiêm trọng | Số lượng | Nhận định |
-| :--- | :---: | :--- |
-| **High / Medium** | **0** | Không có phát hiện nào ở mức ảnh hưởng an toàn quỹ |
-| Low / Informational | 4 | Đã triage — tất cả đều có lý do thiết kế rõ ràng (mục 2) |
+SHA-256 của source được phân tích (bao gồm comment; sửa file sẽ làm hash thay đổi):
 
-**Kết luận:** Hợp đồng không chứa phát hiện nào ở mức Medium trở lên sau đợt khắc phục
-(bỏ dead-code `Cancelled`/`event Cancel`, bỏ guard thừa khỏi `pledge()`, thêm
-`sweepExcessEther()`, ép `limit` về `MAX_PAGE_SIZE`).
+```text
+contracts/Crowdfunding.sol
+ffe0bc39208681be40bffeaaedacf262406420a17929960f1a9b10a6247423ef
+contracts/CrowdfundingFactory.sol
+3dde7791b0ef67d893eab97ae2bb03584eb33faab0c1d31c3fc3c72df7cffd91
+```
 
-## 2. Bảng triage chi tiết (4 phát hiện Informational)
+Đây là chạy trực tiếp bằng solc, không phải benchmark gas hay xác nhận cùng optimizer settings với build Hardhat.
 
-### 2.1. `timestamp` — sử dụng `block.timestamp` cho so sánh thời hạn
+## 2. Kết quả thực tế
 
-* **Vị trí:** `pledge`, `unpledge`, `claim`, `refund`, `state`, `timeLeft`, `receive`
-* **Triage: ACCEPTED (by design).** Validator chỉ được lệch timestamp trong biên
-  hẹp (~12–15 giây theo quy tắc đồng thuận PoS). Chiến dịch đặt hạn theo đơn vị
-  ngày/tuần nên sai lệch này không thể bị khai thác để hưởng lợi có hệ thống.
-  Đây là pattern chuẩn của mọi hợp đồng escrow theo thời gian.
+| Detector | Severity do Slither gán | Crowdfunding | Factory + dependency |
+| :--- | :--- | ---: | ---: |
+| `timestamp` | Low | 7 | 7 |
+| `solc-version` | Informational | 1 | 1 |
+| `low-level-calls` | Informational | 4 | 4 |
+| `naming-convention` | Informational | 1 | 4 |
+| **Tổng instance** | | **13** | **16** |
 
-### 2.2. `solc-version` — pragma range `^0.8.20` chứa các bug đã biết của 0.8.x
+**High: 0; Medium: 0** trong cả hai lượt. Lượt factory gồm lại các phát hiện của Crowdfunding nên **không cộng 13 + 16 thành 29 lỗi độc lập**. Bốn là số nhóm detector đang có kết quả, không phải tổng số phát hiện hoặc bốn Informational. Severity giữ nguyên từ công cụ; nhận định triage không đổi nhãn Low thành Informational.
 
-* **Triage: ACCEPTED.** Ba lỗi được liệt kê (`VerbatimInvalidDeduplication`,
-  `FullInlinerNonExpressionSplitArgumentEvaluationOrder`,
-  `MissingSideEffectsOnSelectorAccess`) không ảnh hưởng đến codebase này (không dùng
-  `verbatim`, không phụ thuộc thứ tự đánh giá inline, không truy cập selector có
-  side-effect). Có thể ghim compiler cứng `0.8.20` tại `hardhat.config.js` để build
-  tái lập được — đã thực hiện.
+## 3. Triage và giới hạn
 
-### 2.3. `low-level-calls` — 4 lệnh `call{value: ...}`
+### 3.1. `timestamp` — Low, 7 instance
 
-* **Triage: ACCEPTED (best practice hiện hành).** Theo khuyến cáo Ethereum Foundation,
-  `call{value}("")` + CEI + ReentrancyGuard là cách chuyển ETH an toàn nhất, thay cho
-  `transfer`/`send` (giới hạn 2.300 gas stingy — phá vỡ Gnosis Safe / ví hợp đồng).
-  Mọi call đều: (1) nằm sau bước EFFECTS, (2) nằm trong `nonReentrant`, (3) kiểm tra
-  `success` và revert bằng custom error.
+**ACCEPTED theo thiết kế, có giới hạn:** pledge, unpledge, claim, refund, state, timeLeft và receive cần so sánh deadline. Trên Ethereum PoS, timestamp execution payload được xác định theo slot, không tùy chỉnh ±15 giây. Tuy nhiên giao dịch có thể vào block muộn, slot có thể bị bỏ qua và bên sản xuất block có thể chọn/thay đổi thứ tự giao dịch. Không bảo đảm giao dịch gửi sát hạn được xử lý trước hạn; mạng EVM khác có quy tắc thời gian riêng.
 
-### 2.4. `naming-convention` — tham số `_amount` không mixedCase
+Test EVM kiểm tra các mốc cụ thể, gồm claim bị chặn tại `endAt - 1`, claim hợp lệ tại `endAt`, pledge/unpledge bị chặn tại `endAt`. Đây không phải chứng minh liveness hay chống kiểm duyệt.
 
-* **Triage: ACCEPTED.** Quy ước `_` prefix cho tham số hợp đồng là convention được
-  chấp nhận rộng rãi (kể cả trong code mẫu của OpenZeppelin thời kỳ trước), dùng để
-  phân biệt tham số với biến trạng thái. Cố ý giữ lại cho tính nhất quán.
+Nguồn: [Ethereum consensus specification](https://github.com/ethereum/consensus-specs/blob/master/specs/bellatrix/beacon-chain.md#process_execution_payload).
 
-## 3. Các phát hiện đã được xử lý TRƯỚC khi chạy Slither (so với phiên bản đầu)
+### 3.2. `solc-version` — Informational
 
-| Vấn đề | Đã khắc phục bằng |
-| :--- | :--- |
-| Dead code: `CampaignState.Cancelled` không thể đạt, `event Cancel` không bao giờ emit | Xóa khỏi enum/event, thay bằng `event Sweep` cho `sweepExcessEther()` |
-| ETH ép vào (selfdestruct) có thể brick vĩnh viễn trong chiến dịch FAILED | Hàm `sweepExcessEther()` chỉ rút phần `balance - pledged` |
-| Bất biến `pledged == Σ pledgedAmount` bị phá sau `refund()` | `refund()` giảm `pledged` tương ứng |
-| Guard thừa trên `pledge()` (~5.800 gas/lần + corner case griefing) | Bỏ guard, ghi chú NatSpec lý do |
-| `uint32` timestamp tràn năm 2106 | Chuyển `uint64` ở cả contract và factory |
-| `getCampaigns(limit)` không giới hạn → RPC DoS | Clamp `MAX_PAGE_SIZE = 100` |
+**REVIEWED, còn giới hạn công cụ:** Slither nêu `VerbatimInvalidDeduplication`, `FullInlinerNonExpressionSplitArgumentEvaluationOrder`, `MissingSideEffectsOnSelectorAccess` trong thông tin pragma/version. Source hiện không dùng inline assembly/verbatim, custom Yul optimizer sequence hoặc biểu thức truy cập selector có side effect tương ứng. Hardhat ghim compiler 0.8.20 và optimizer 200 runs.
 
-## 4. Xác thực động (bổ trợ Slither)
+Không suy ra bản compiler không có bug. Khi đổi compiler, optimizer hoặc source phải xem lại điều kiện ảnh hưởng và chạy lại test/phân tích. Tham khảo [Solidity known bugs](https://docs.soliditylang.org/en/latest/bugs.html).
 
-* **52 test tự động** (18 mock spec-based + 34 EVM trên Hardhat Network) — 100% pass.
-* **Invariant fuzz** 80 ops ngẫu nhiên có hạt: `pledged == Σ pledgedAmount` và
-  `balance == pledged` giữ vững qua mọi thao tác.
-* **Attack simulation trên EVM thật:** `ReentrancyAttacker` (nested refund) bị guard
-  chặn; `ForceEther` (selfdestruct) được `sweepExcessEther()` trung hòa.
+### 3.3. `low-level-calls` — Informational, 4 instance
+
+**ACCEPTED có kiểm chứng theo kịch bản:** unpledge, claim, refund và sweep dùng low-level call để chuyển ETH. Các hàm có guard và kiểm tra `success`; unpledge/refund cập nhật sổ sách trước chuyển tiền, claim đặt `claimed` trước chuyển, sweep tính phần dư trước call mà không sửa khoản ghi nhận.
+
+Bộ test dùng `RejectingReceiver` để chứng minh `TransferFailed` rollback và retry ở cả bốn luồng. Với refund, còn kiểm tra backer thông thường vẫn rút được dù receiver khác từ chối ETH. Điều này không bảo đảm mọi ví nhận đều tương thích; creator/receiver không thể nhận ETH có thể vẫn không rút được cho đến khi khắc phục phía receiver, nếu họ có khả năng làm vậy.
+
+### 3.4. `naming-convention` — Informational
+
+**ACCEPTED theo quy ước source:** tham số có tiền tố `_` bị detector đánh dấu. Lượt contract chính có `_amount`; lượt factory thêm `_goal`, `_durationSeconds`, `_creator`. Đây là lựa chọn đặt tên, không phải kết luận về an toàn quỹ.
+
+## 4. Kiểm chứng động bổ trợ
+
+* `npm test`: 18 test mô hình JavaScript + 41 test Hardhat EVM. Mô hình JavaScript không thực thi Solidity.
+* Nested refund kiểm tra revert selector `ReentrancyGuardTriggered` trong khi refund bên ngoài vẫn hoàn tất.
+* Forced ETH kiểm tra balance khác pledged, refund theo khoản ghi nhận và sweep phần dư. [EIP-6780](https://eips.ethereum.org/EIPS/eip-6780) không loại bỏ việc SELFDESTRUCT chuyển ETH; điều kiện cùng transaction liên quan đến xóa code/storage.
+* Fuzz: 80 thao tác pledge/unpledge còn hạn, bốn actor, seed `0xC0FFEE`, không forced ETH/claim/refund. `balance == pledged` chỉ được kiểm tra trong phạm vi đó; không phải bất biến toàn lifecycle.
+
+**Kết luận:** hai lượt chạy không báo High/Medium; các phát hiện Low/Informational được giải thích ở trên. Đây là phân tích tĩnh có phạm vi, không phải audit độc lập, chứng nhận không có lỗ hổng hoặc bằng chứng coverage 100%.

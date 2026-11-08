@@ -35,21 +35,21 @@
         </div>
         <div>
           <div class="brand-title">CrowdFund3</div>
-          <div class="brand-spec">Solidity ^0.8.20 · CEI Protocol</div>
+          <div class="brand-spec">Gọi vốn có mục tiêu &amp; thời hạn</div>
         </div>
       </div>
 
       <!-- Chuyển chế độ: Mô phỏng Sandbox ↔ MetaMask on-chain -->
       <nav class="mode-tabs">
-        <button id="tabBtnSandbox" class="tab-btn active" onclick="switchModeTab('sandbox')">
+        <button id="tabBtnSandbox" class="tab-btn active" aria-pressed="true" onclick="switchModeTab('sandbox')">
           <span class="tab-icon" aria-hidden="true">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
               <path d="M9 3h6M10 3v6.5L5.5 17A2.4 2.4 0 0 0 7.6 21h8.8a2.4 2.4 0 0 0 2.1-4L14 9.5V3"/>
             </svg>
           </span>
-          <span>Mô phỏng Sandbox</span>
+          <span>Mô phỏng</span>
         </button>
-        <button id="tabBtnWeb3" class="tab-btn" onclick="switchModeTab('web3')">
+        <button id="tabBtnWeb3" class="tab-btn" aria-pressed="false" onclick="switchModeTab('web3')">
           <span class="tab-icon" aria-hidden="true">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
               <path d="M3 10.5 5 4l4.5 3h5L19 4l2 6.5-2.5 8.5h-13L3 10.5Z"/>
@@ -63,7 +63,7 @@
       <div class="nav-actions">
         <div class="network-indicator">
           <span class="pulse-dot" aria-hidden="true"></span>
-          <span id="networkLabel">Giả lập EVM</span>
+          <span id="networkLabel">Mô phỏng</span>
         </div>
 
         <div class="wallet-group">
@@ -79,7 +79,6 @@
               <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
             </svg>
           </button>
-          <span class="role-badge role-backer" id="roleBadge">Backer</span>
         </div>
 
         <button id="btnThemeToggle" class="btn-theme-toggle" onclick="toggleTheme()" title="Phím tắt T — đổi chế độ sáng/tối">
@@ -101,7 +100,7 @@
         <div class="campaign-hero-card">
           <div class="hero-header-row">
             <div>
-              <div class="campaign-subtag">Chiến dịch gọi vốn cộng đồng · Hợp đồng xác thực</div>
+              <div class="campaign-subtag">Chiến dịch mô phỏng · Không sử dụng ETH thật</div>
               <h1 class="campaign-title">Dự án Orbit</h1>
             </div>
             <div class="state-pill state-active" id="campaignStatusPill">
@@ -109,11 +108,6 @@
               <span id="campaignStatusText">ĐANG MỞ</span>
             </div>
           </div>
-
-          <p class="campaign-desc">
-            Trạm chuyển tiếp vệ tinh mã nguồn mở. Quỹ được khóa an toàn trong hợp đồng thông minh và
-            chỉ giải ngân khi thoả đồng thời: <b>đạt mục tiêu 10.00 ETH</b> và <b>hoàn tất hạn 7 ngày</b>.
-          </p>
 
           <!-- HERO PROGRESS COMPONENT — Thanh tiến độ chuẩn sản phẩm thực tế -->
           <div class="hero-progress-block">
@@ -131,7 +125,7 @@
             </div>
 
             <!-- Thanh đo tiến độ mượt mà -->
-            <div class="hero-meter-track" role="progressbar" aria-label="Tiến độ vốn">
+            <div class="hero-meter-track" role="progressbar" aria-label="Tiến độ vốn" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
               <div class="hero-meter-fill" id="boltGoalFill" style="--p:0"></div>
             </div>
 
@@ -141,7 +135,7 @@
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mini-icon" aria-hidden="true">
                   <circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/>
                 </svg>
-                <span>Thời hạn hợp đồng:</span>
+                <span>Ngày mô phỏng:</span>
                 <b id="timeCurrent">Ngày 0.0</b> / <span id="timeTarget">Ngày 7.0</span>
               </div>
               <span class="cond-badge" id="condTime">
@@ -154,8 +148,8 @@
           <!-- DẢI 4 SỐ LIỆU TỔNG QUAN (Unified Segmented Metric Strip) -->
           <div class="metrics-strip">
             <div class="metric-cell">
-              <span class="cell-label">Tổng quỹ cam kết</span>
-              <span class="cell-val text-accent" id="contractEscrowBalance">0.00 ETH</span>
+              <span class="cell-label">Quỹ trong hợp đồng</span>
+              <span class="cell-val" id="contractEscrowBalance">0.00 ETH</span>
             </div>
             <div class="metric-cell">
               <span class="cell-label">Số người ủng hộ</span>
@@ -171,34 +165,17 @@
             </div>
           </div>
 
-          <!-- Cụm kiểm tra điều kiện chuyển trạng thái (State Transition Guards Rails) -->
-          <details class="contract-spec-drawer">
-            <summary class="spec-summary-btn">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="summary-arrow" aria-hidden="true">
-                <path d="m6 9 6 6 6-6"/>
-              </svg>
-              <span>Điều kiện tiên quyết giải ngân (State Guards)</span>
-            </summary>
-            <div class="spec-content-body">
-              <div class="spec-item" id="invGoal">
-                <span class="spec-tag">Điều kiện vốn (Goal Guard):</span>
-                <div class="contract-expr" id="exprGoal"></div>
-              </div>
-              <div class="spec-item" id="invTime">
-                <span class="spec-tag">Điều kiện thời gian (Time Guard):</span>
-                <div class="contract-expr" id="exprTime"></div>
-              </div>
-            </div>
-          </details>
+          <div class="claim-guards" aria-label="Điều kiện giải ngân cho ví đang chọn" aria-live="polite">
+            <div><span class="guard-label">Mục tiêu vốn</span><strong id="guardGoal">Chưa đạt</strong></div>
+            <div><span class="guard-label">Thời hạn</span><strong id="guardTime">Chưa hết hạn</strong></div>
+            <div><span class="guard-label">Quyền giải ngân</span><strong id="guardClaim">Chỉ chủ dự án</strong></div>
+          </div>
 
-          <!-- KHU VỰC THAO TÁC HÀNH ĐỘNG (ACTION COCKPIT) -->
           <div class="action-cockpit">
-            
-            <!-- Pod 1: Đóng góp vốn -->
-            <div class="action-pod">
+            <div class="action-pod pledge-pod">
               <div class="pod-header">
-                <span class="pod-title">Đóng góp vốn</span>
-                <span class="pod-sub">Ủng hộ chiến dịch bằng ETH</span>
+                <label class="pod-title" for="pledgeInput">Đóng góp vốn</label>
+                <span class="pod-sub">Chọn số ETH bạn muốn ủng hộ</span>
               </div>
 
               <div class="pledge-input-row">
@@ -212,7 +189,7 @@
                   <button type="button" class="btn-chip active" data-val="1.0" onclick="setPledgeAmount(1.0)">1.0</button>
                   <button type="button" class="btn-chip" data-val="3.0" onclick="setPledgeAmount(3.0)">3.0</button>
                   <button type="button" class="btn-chip" data-val="4.0" onclick="setPledgeAmount(4.0)">4.0</button>
-                  <button type="button" class="btn-chip btn-chip-max" data-val="max" onclick="setPledgeMax()" title="Tự động điền số ETH cần để đạt mục tiêu hoặc tối đa ví">MAX</button>
+                  <button type="button" class="btn-chip btn-chip-max" data-val="max" onclick="setPledgeMax()" title="Điền số còn thiếu để đạt mục tiêu, tối đa bằng số dư ví">Đủ mục tiêu</button>
                 </div>
               </div>
 
@@ -223,36 +200,32 @@
                     <path d="M12 19V5M5 12l7-7 7 7"/>
                   </svg>
                 </button>
-                <button id="btnUnpledge" class="btn btn-secondary" onclick="handleUnpledge()">Hủy góp (Unpledge)</button>
               </div>
-              <div class="condition-hint" id="unpledgeConditionHint">Khả dụng khi bạn đã góp (> 0 ETH) và chiến dịch còn hạn.</div>
+              <div class="unpledge-action">
+                <button id="btnUnpledge" class="btn btn-text" onclick="handleUnpledge()" aria-describedby="unpledgeConditionHint">Rút lại tiền</button>
+                <div class="condition-hint" id="unpledgeConditionHint">Bạn có thể rút lại tiền khi chiến dịch còn hạn.</div>
+              </div>
             </div>
 
-            <!-- Pod 2: Kết toán hợp đồng -->
-            <div class="action-pod">
+            <div class="action-pod settlement-pod">
               <div class="pod-header">
-                <span class="pod-title">Kết toán quỹ</span>
-                <span class="pod-sub">Rút vốn (Chủ dự án) · Hoàn tiền (Backer tự rút)</span>
+                <span class="pod-title">Giải ngân &amp; hoàn tiền</span>
+                <span class="pod-sub">Khả dụng sau khi chiến dịch hết hạn</span>
               </div>
 
               <div class="settlement-stack">
                 <div class="settlement-action">
-                  <button id="btnClaim" class="btn btn-claim" disabled onclick="handleClaim()">
-                    Rút vốn về Chủ dự án
-                  </button>
-                  <div class="condition-hint" id="claimConditionHint">Chỉ Chủ dự án rút vốn khi hết hạn &amp; đạt đủ 10 ETH.</div>
+                  <button id="btnClaim" class="btn btn-claim" disabled onclick="handleClaim()" aria-describedby="claimConditionHint">Giải ngân cho chủ dự án</button>
+                  <div class="condition-hint" id="claimConditionHint">Chỉ chủ dự án giải ngân khi hết hạn và đủ vốn.</div>
                 </div>
-
                 <div class="settlement-action">
-                  <button id="btnRefund" class="btn btn-refund" disabled onclick="handleRefund()">
-                    Hoàn tiền cho người góp
-                  </button>
-                  <div class="condition-hint" id="refundConditionHint">Chỉ mở khi hết hạn mà không đạt mục tiêu.</div>
+                  <button id="btnRefund" class="btn btn-refund" disabled onclick="handleRefund()" aria-describedby="refundConditionHint">Nhận lại tiền đã góp</button>
+                  <div class="condition-hint" id="refundConditionHint">Mỗi người tự nhận lại tiền nếu không đủ vốn.</div>
                 </div>
               </div>
             </div>
-
           </div>
+
 
         </div>
 
@@ -304,8 +277,8 @@
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" class="empty-icon" aria-hidden="true">
                           <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
                         </svg>
-                        <div class="empty-title">Sổ cái on-chain chưa có bản ghi</div>
-                        <div class="empty-desc">Chọn số ETH và bấm "Đóng góp ETH" ở bảng bên trái để ghi nhận giao dịch đầu tiên vào Smart Contract.</div>
+                        <div class="empty-title">Chưa có người góp vốn</div>
+                        <div class="empty-desc">Chọn số ETH trong mục Đóng góp vốn để bắt đầu mô phỏng.</div>
                       </div>
                     </td>
                   </tr>
@@ -313,10 +286,18 @@
               </table>
             </div>
 
+            <section class="recent-activity" aria-labelledby="recentActivityTitle">
+              <div class="event-pane-header">
+                <h2 class="event-pane-title" id="recentActivityTitle">Hoạt động gần nhất</h2>
+                <button class="btn-clear-log" onclick="switchRightTab('events')">Xem nhật ký</button>
+              </div>
+              <div class="recent-feed" id="recentActivityLog"></div>
+            </section>
+
             <!-- Bất biến bảo toàn vốn (Zero Fund-Leakage Invariant) -->
             <div class="invariant-live" id="invLive">
               <div class="inv-live-left">
-                <span class="inv-live-label">Kiểm chứng bất biến (Invariant):</span>
+                <span class="inv-live-label">Kiểm tra sổ sách mô phỏng (ETH):</span>
                 <span class="invariant-live-expr">
                   pledged <b id="pledgedTotal">0.00</b> = Σ pledgedAmount <b id="pledgeSum">0.00</b>
                 </span>
@@ -326,6 +307,23 @@
                 <span id="invLiveText">khớp</span>
               </span>
             </div>
+            <details class="contract-spec-drawer">
+              <summary class="spec-summary-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="summary-arrow" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+                <span>Chi tiết Solidity &amp; sổ sách</span>
+              </summary>
+              <div class="spec-content-body">
+                <div class="spec-item" id="invGoal">
+                  <span class="spec-tag">Điều kiện vốn</span>
+                  <div class="contract-expr" id="exprGoal"></div>
+                </div>
+                <div class="spec-item" id="invTime">
+                  <span class="spec-tag">Điều kiện thời gian</span>
+                  <div class="contract-expr" id="exprTime"></div>
+                </div>
+              </div>
+              <p class="accounting-note">Đây là kiểm tra dữ liệu JavaScript, không phải thực thi EVM hay kiểm chứng hình thức. <code>pledged</code> là tổng khoản góp còn được ghi nhận, không phải số dư ETH thực tế: sau giải ngân, sổ ghi nhận vẫn còn nhưng quỹ bằng 0; ETH gửi ép có thể làm số dư lớn hơn <code>pledged</code>.</p>
+            </details>
           </div>
 
           <!-- TAB PANE 2: NGUYÊN TẮC BẢO MẬT & KIẾN TRÚC CEI -->
@@ -338,8 +336,8 @@
                   </svg>
                 </span>
                 <div class="enforce-body">
-                  <div class="enforce-title">Không ai rút được trước hạn</div>
-                  <div class="enforce-note">Mọi lối vào kết toán đều chặn bằng <code>block.timestamp &gt;= endAt</code>. Chủ dự án cũng không ngoại lệ.</div>
+                  <div class="enforce-title">Chủ dự án không thể giải ngân trước hạn</div>
+                  <div class="enforce-note"><code>claim()</code> yêu cầu hết hạn và đủ vốn. Trước hạn, người góp vẫn có thể rút lại tiền qua <code>unpledge(amount)</code>.</div>
                 </div>
               </div>
 
@@ -374,8 +372,8 @@
                   </svg>
                 </span>
                 <div class="enforce-body">
-                  <div class="enforce-title">Mẫu Checks-Effects-Interactions (CEI)</div>
-                  <div class="enforce-note">Số dư được cập nhật về 0 trước khi chuyển ETH, triệt tiêu hoàn toàn lỗ hổng tái nhập (Reentrancy).</div>
+                  <div class="enforce-title">CEI kết hợp khóa chống tái nhập</div>
+                  <div class="enforce-note">Cập nhật sổ sách trước khi chuyển ETH: <code>refund()</code> xóa khoản góp, <code>claim()</code> đặt cờ <code>claimed</code>. Các hàm chuyển ETH dùng khóa <code>nonReentrant</code> tự triển khai.</div>
                 </div>
               </div>
 
@@ -387,20 +385,20 @@
                 </span>
                 <div class="enforce-body">
                   <div class="enforce-title">ETH gửi ép không bị kẹt</div>
-                  <div class="enforce-note"><code>sweepExcessEther()</code> chỉ quét phần vượt quá <code>pledged</code>, bảo toàn tuyệt đối quỹ hoàn tiền.</div>
+                  <div class="enforce-note">Chủ dự án có thể gọi <code>sweepExcessEther()</code> để thu phần số dư vượt <code>pledged</code>. Hàm không trừ các khoản góp đang được ghi nhận.</div>
                 </div>
               </div>
             </div>
 
             <div class="security-footer-note">
-              Thiết kế theo chuẩn bảo mật OpenZeppelin &amp; Ethereum Security Best Practices.
+              Các cơ chế trên cần đối chiếu mã Solidity và kiểm thử EVM; dấu tích ở đây không phải kết quả kiểm toán bảo mật.
             </div>
           </div>
 
           <!-- TAB PANE 3: NHẬT KÝ SỰ KIỆN ON-CHAIN -->
           <div class="right-tab-pane" id="pane-events">
             <div class="event-pane-header">
-              <span class="event-pane-title">Sự kiện giao dịch thời gian thực</span>
+              <span class="event-pane-title">Nhật ký mô phỏng JavaScript</span>
               <button class="btn-clear-log" onclick="clearEventLogs()">Xoá nhật ký</button>
             </div>
             <div class="event-feed" id="eventLogContainer">
@@ -418,13 +416,17 @@
          BẢNG ĐIỀU KHIỂN MÔ PHỎNG & THUYẾT TRÌNH (DEMO REMOTE BAR)
          ══════════════════════════════════════════════════════════════ -->
     <div class="demo-remote-bar">
-      <div class="remote-inner">
+      <div class="remote-heading">
+        <span class="remote-title">Điều khiển mô phỏng</span>
+        <button class="btn-clear-log" id="btnToggleRemote" onclick="toggleDemoControls()" aria-expanded="true" aria-controls="demoControls">Thu gọn</button>
+      </div>
+      <div class="remote-inner" id="demoControls">
         
         <!-- Cụm 1: Kịch bản 1-click -->
         <div class="remote-section">
           <span class="remote-label">Kịch bản:</span>
-          <button class="btn-scenario success" onclick="runSuccessScenario()" title="Mô phỏng đạt 11/10 ETH, qua hạn 7 ngày, tự động chọn ví Chủ dự án để rút vốn">
-            Đạt mục tiêu (11 ETH)
+          <button class="btn-scenario success" onclick="runSuccessScenario()" title="Chuẩn bị đúng 10 ETH ở ngày 6.9. Vẫn chưa được giải ngân; chuyển tới ngày 7.0 để kiểm tra ranh giới hạn.">
+            Đủ vốn · Chưa hết hạn
           </button>
           <button class="btn-scenario oversub" onclick="runOversubscribedScenario()" title="Mô phỏng góp 12/10 ETH, chứng minh hợp đồng nhận toàn bộ và giải ngân đầy đủ 12 ETH">
             Vượt mức (12 ETH)
@@ -446,7 +448,7 @@
             <button class="btn-time-jump" id="timeJump0" onclick="setTimeByDays(0)">0d</button>
             <button class="btn-time-jump" id="timeJump3" onclick="setTimeByDays(3.5)">3.5d</button>
             <button class="btn-time-jump" id="timeJump6" onclick="setTimeByDays(6.9)">6.9d</button>
-            <button class="btn-time-jump is-deadline" id="timeJump7" onclick="setTimeByDays(7.1)">7.1d · Hạn</button>
+            <button class="btn-time-jump is-deadline" id="timeJump7" onclick="setTimeByDays(7)">7.0d · Hạn</button>
           </div>
           <div class="time-slider-wrapper">
             <input type="range" id="timeSlider" class="timeline-range" min="0" max="10" step="0.1" value="0"
@@ -470,8 +472,7 @@
             <div class="campaign-subtag">Tương tác on-chain thật</div>
             <h2 class="web3-main-title">Kết nối MetaMask · Sepolia Testnet</h2>
             <p class="web3-sub-desc">
-              Gọi trực tiếp bytecode đã triển khai qua Ethers.js v6. Mỗi giao dịch được ký bằng
-              khoá riêng ECDSA secp256k1 và phát lên mạng Ethereum thật.
+              Kết nối ví và hợp đồng trên Sepolia hoặc mạng cục bộ. Mỗi giao dịch cần bạn xác nhận trong MetaMask.
             </p>
           </div>
           <div class="web3-badge-pill" id="web3NetworkBadge">Chưa kết nối</div>
@@ -534,14 +535,14 @@
 
           <div class="web3-actions-row">
             <button id="btnW3Pledge" class="btn btn-primary" onclick="web3Pledge()" disabled>
-              <span>Đóng góp ETH on-chain</span>
+              <span>Đóng góp ETH</span>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon" aria-hidden="true">
                 <path d="M12 19V5M5 12l7-7 7 7"/>
               </svg>
             </button>
-            <button id="btnW3Unpledge" class="btn btn-secondary" onclick="web3Unpledge()" disabled>Hủy góp (Unpledge)</button>
-            <button id="btnW3Claim" class="btn btn-claim" onclick="web3Claim()" disabled>Rút vốn (Chủ dự án)</button>
-            <button id="btnW3Refund" class="btn btn-refund" onclick="web3Refund()" disabled>Hoàn tiền (Backer)</button>
+            <button id="btnW3Unpledge" class="btn btn-secondary" onclick="web3Unpledge()" disabled>Rút lại toàn bộ</button>
+            <button id="btnW3Claim" class="btn btn-claim" onclick="web3Claim()" disabled>Giải ngân</button>
+            <button id="btnW3Refund" class="btn btn-refund" onclick="web3Refund()" disabled>Nhận hoàn tiền</button>
             <button id="btnW3Refresh" class="btn btn-secondary" onclick="refreshOnChainState()" disabled title="Đọc lại dữ liệu mới nhất từ RPC Node">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon" aria-hidden="true">
                 <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
@@ -554,9 +555,13 @@
             <div class="condition-hint" id="web3ActionHint">Kết nối MetaMask và chọn địa chỉ hợp đồng để mở khóa các thao tác on-chain.</div>
           </div>
 
-          <div class="web3-log-card" id="web3Log">
-            <span class="web3-log-empty">Chưa có giao dịch on-chain nào trong phiên này.</span>
-          </div>
+          <div class="web3-session-status" id="web3Status" role="status">Chưa kết nối ví.</div>
+          <section class="web3-history" aria-labelledby="web3HistoryTitle">
+            <h3 class="event-pane-title" id="web3HistoryTitle">Giao dịch gần nhất · Phiên này</h3>
+            <div class="web3-log-card" id="web3Log" aria-live="polite">
+              <p class="web3-log-empty">Chưa gửi giao dịch. Tx hash, block và kết quả xác nhận sẽ được giữ tại đây trong phiên này.</p>
+            </div>
+          </section>
 
         </div>
       </div>

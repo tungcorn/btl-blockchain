@@ -5,94 +5,115 @@
 ## 2.1. Nền tảng Ethereum và Máy ảo EVM (Ethereum Virtual Machine)
 
 ### 2.1.1. Kiến trúc Máy ảo EVM
-Ethereum là một máy trạng thái hữu hạn phân tán (Distributed State Machine). Trung tâm điều hành của mạng lưới là **EVM (Ethereum Virtual Machine)** – môi trường thực thi bytecode biệt lập, đảm bảo rằng mọi nút (Node/Validator) trong mạng lưới P2P đều tính toán và đạt cùng một kết quả trạng thái sau khi xử lý các giao dịch.
+Ethereum duy trì trạng thái phân tán. EVM thực thi bytecode theo các quy tắc xác định; các node xác thực phải tính ra cùng kết quả khi xử lý cùng trạng thái đầu vào và cùng giao dịch hợp lệ.
 
-Trong EVM, có hai loại tài khoản chính:
-1. **Tài khoản người dùng ngoài (Externally Owned Account - EOA):** Được kiểm soát bằng cặp khóa mật mã (Private Key & Public Key). EOA có thể tự khởi tạo giao dịch ký số.
-2. **Tài khoản hợp đồng (Contract Account):** Không có Private Key; được kiểm soát bởi mã nhị phân bytecode đã được biên dịch và lưu trữ trên sổ cái. Contract Account chỉ thực thi khi nhận được giao dịch từ EOA hoặc lời gọi hàm nội bộ (Message Call) từ một contract khác.
+Trong mô hình tài khoản cơ sở:
+1. **Externally Owned Account (EOA):** tài khoản có quyền ký giao dịch gắn với khóa riêng. Trong demo, ví MetaMask cung cấp signer để gửi giao dịch.
+2. **Contract account:** có code và storage, không có khóa riêng để tự ký giao dịch. Contract thực thi trong quá trình xử lý giao dịch hoặc lời gọi từ contract khác; không tự thức dậy khi đồng hồ đến deadline. Mô hình này là nền tảng giải thích demo, không mô tả toàn bộ cơ chế ủy quyền tài khoản ở các nâng cấp Ethereum mới.
 
-### 2.1.2. Mô hình Lưu trữ Dữ liệu trong EVM
-EVM chia bộ nhớ làm 3 vùng độc lập với chi phí gas khác biệt:
-* **Storage:** Vùng nhớ trạng thái vĩnh cửu gắn liền với contract trên blockchain. Đọc/ghi vào `storage` (các opcode `SLOAD`/`SSTORE`) có chi phí gas cực kỳ đắt đỏ (từ 2,100 đến 20,000 gas mỗi slot 32 bytes).
-* **Memory:** Vùng nhớ tạm thời chỉ tồn tại trong suốt vòng đời của một lời gọi hàm; được giải phóng sau khi hàm kết thúc.
-* **Calldata:** Vùng nhớ chỉ đọc (Read-only), không thể chỉnh sửa, chứa dữ liệu đối số truyền vào từ giao dịch bên ngoài.
+### 2.1.2. Lưu trữ dữ liệu và chi phí gas
+Các vùng dữ liệu thường gặp trong Solidity:
+* **Storage:** trạng thái của contract tồn tại qua các giao dịch, như `pledged` và `pledgedAmount`. Chi phí `SLOAD`/`SSTORE` phụ thuộc truy cập cold/warm, giá trị cũ/mới và quy tắc của EVM; không có một mức gas cố định cho mọi lần đọc/ghi.
+* **Memory:** dữ liệu tạm thời trong một call frame, không được giữ làm trạng thái lâu dài.
+* **Calldata:** dữ liệu đầu vào chỉ đọc của lời gọi. Đây không phải toàn bộ kiến trúc bộ nhớ EVM; EVM còn có stack và các thành phần khác.
 
----
-
-## 2.2. Ngôn ngữ lập trình Solidity (^0.8.20) và Kỹ thuật Tối ưu
-
-### 2.2.1. Biến môi trường và Dòng thời gian khối (`block.timestamp`)
-Trong Solidity, `block.timestamp` trả về dấu thời gian tính bằng giây (Unix epoch time) của khối hiện tại.
-* **Đặc tính an toàn:** Kể từ bản nâng cấp Ethereum The Merge (Proof-of-Stake), các khối được tạo theo chu kỳ cố định (Slot = 12 giây). Validator có thể tinh chỉnh thời gian nhưng chỉ được phép lệch tối đa trong một biên độ rất hẹp (~15 giây) nếu không khối sẽ bị mạng lưới từ chối.
-* **Khả năng áp dụng:** Vì dự án Crowdfunding xác định hạn chót theo đơn vị ngày hoặc tuần (`duration >= 1 day`), độ lệch vài giây của `block.timestamp` hoàn toàn không gây ảnh hưởng đến tính công bằng của chiến dịch. Hợp đồng lưu timestamp bằng `uint64` — đủ lớn để không tràn số trước năm 2106 (giá trị `uint32` sẽ bị cắt ngầm khi cast), mà vẫn tiết kiệm bytecode vì các biến này là `immutable` (không chiếm storage slot).
-
-### 2.2.2. Tối ưu Gas với Biến `immutable`
-Thay vì lưu trữ thông tin cố định trong `storage` tốn kém, Solidity cung cấp từ khóa `immutable`:
-* Biến `immutable` (như `creator`, `goal`, `startAt`, `endAt`) được gán giá trị duy nhất một lần tại thời điểm chạy `constructor`.
-* Trình biên dịch sẽ chèn trực tiếp giá trị của biến vào mã bytecode của hợp đồng. Khi thực thi các hàm sau này, EVM đọc giá trị trực tiếp từ bytecode thay vì tốn lệnh `SLOAD`, tiết kiệm khoảng **2,100 gas** cho mỗi lần đọc biến.
-
-### 2.2.3. Tối ưu hóa Chi phí Revert bằng Custom Errors
-Kể từ phiên bản Solidity 0.8.4, cơ chế **Custom Errors** được giới thiệu để thay thế cho chuỗi thông báo lỗi truyền thống trong lệnh `require`:
-* **Cách cũ (`require(cond, "Long error string...")`):** Chuỗi văn bản được lưu trữ dưới dạng chuỗi UTF-8 chiếm nhiều slot bộ nhớ bytecode. Khi revert, EVM phải trích xuất và giải mã chuỗi, tiêu tốn từ 20,000 đến 40,000 gas.
-* **Cách mới (`error GoalNotReached(); if (!cond) revert GoalNotReached();`):** Lỗi chỉ được mã hóa thành Function Selector 4 bytes (`bytes4(keccak256("GoalNotReached()"))`).
-* **Hiệu quả:** Lợi ích chính nằm ở **kích thước bytecode và chi phí deploy** — chuỗi lỗi dài bị loại bỏ hoàn toàn khỏi contract code; tại runtime, khi revert, EVM không phải mở rộng memory để copy chuỗi UTF-8 nữa. Ngoài ra custom error hỗ trợ tham số kiểu hóa (typed) giúp dApps decode lỗi chính xác. Lưu ý đánh giá trung thực: mức tiết kiệm gas khi revert phụ thuộc độ dài chuỗi và ngữ cảnh, không cố định là "45%"; nhóm đo lường và trình bày theo số liệu thực tế thay vì con số tuyên truyền.
+### 2.1.3. ETH/wei, payable và ghi nhận đóng góp
+* `1 ETH = 10^18 wei`. `msg.value` là số wei gửi kèm lời gọi, còn `msg.sender` là địa chỉ gọi trực tiếp vào contract.
+* `pledge()` và `receive()` là `payable`, cho phép nhận ETH. `pledgedAmount[address]` ghi nhận khoản góp của từng địa chỉ; `pledged` ghi tổng khoản góp còn được ghi nhận.
+* `unpledge(amount)` trừ khoản ghi nhận trước khi gửi ETH trả lại. Rút hết trước hạn làm giảm `contributorCount`; góp lại từ khoản ghi nhận bằng 0 làm tăng bộ đếm.
+* Event phục vụ truy vết/indexing; không thay thế storage dùng để kiểm tra quyền rút tiền. Ví dụ, giao diện không được dùng log thay cho `pledgedAmount` khi xác định khoản có thể hoàn.
+* ETH hoàn lại không bao gồm phí gas đã trả cho mạng. Số dư ví sau refund không nhất thiết bằng số dư trước khi người dùng bắt đầu góp vốn.
 
 ---
 
-## 2.3. Các Mẫu Thiết Kế An Ninh Smart Contract Cốt Lõi
+## 2.2. Ngôn ngữ Solidity (^0.8.20) và kỹ thuật tối ưu
 
-Để đảm bảo hợp đồng thông minh không thể bị hack và bảo vệ an toàn 100% tiền gửi của người dùng, nhóm áp dụng các mẫu thiết kế an ninh tiêu chuẩn quốc tế:
+### 2.2.1. Thời gian khối và deadline (`block.timestamp`)
+`block.timestamp` là timestamp Unix, tính bằng giây, của block đang thực thi.
 
-### 2.3.1. Mô hình Kiểm tra - Thay đổi - Tương tác (Checks-Effects-Interactions - CEI)
-Đây là tiêu chuẩn vàng để phòng thủ trước lỗ hổng kinh điển **Tấn công Tái nhập (Reentrancy Attack)**. Nguyên tắc bắt buộc:
-1. **Checks:** Kiểm tra toàn bộ điều kiện đầu vào (`require` hoặc `if ... revert`).
-2. **Effects:** Cập nhật biến trạng thái nội bộ của hợp đồng (ví dụ: trừ số dư người dùng về 0).
-3. **Interactions:** Thực hiện tương tác với các địa chỉ bên ngoài (gửi tiền ETH hoặc gọi hàm contract khác).
+* Trên **Ethereum PoS**, slot dài 12 giây; timestamp của execution payload phải khớp thời điểm tính cho slot. Validator không có quyền tùy chọn timestamp lệch ±12–15 giây cho cùng slot. Slot có thể bị bỏ qua; giao dịch có thể được đưa vào block muộn hơn lúc người dùng gửi. Quy tắc của mạng EVM khác cần được xem riêng.
+* Contract dùng điều kiện `block.timestamp < endAt` để cho phép góp/rút trước hạn. Tại đúng `endAt`, hai thao tác này bị chặn; claim/refund được xét theo mục tiêu và quyền gọi. `state()` tính trạng thái khi được gọi, không cần một giao dịch tự cập nhật enum vào storage.
+* Constructor thực tế chấp nhận **1 đến 31.536.000 giây (365 ngày)**. Thời lượng 7 ngày là ví dụ sandbox, không phải mức tối thiểu của contract. Deadline không bảo đảm giao dịch gửi sát hạn sẽ kịp được đưa vào block.
+* `startAt`/`endAt` dùng `uint64`, tránh giới hạn năm 2106 của `uint32`. Đây là biến `immutable`, không phải ví dụ packing các timestamp vào storage.
+* Slider chỉ đổi thời gian của mô hình JavaScript. Hardhat có RPC kiểm thử để điều chỉnh timestamp cục bộ; slider không điều khiển timestamp Sepolia.
+
+Nguồn: [Ethereum consensus specification — process_execution_payload](https://github.com/ethereum/consensus-specs/blob/master/specs/bellatrix/beacon-chain.md#process_execution_payload).
+
+### 2.2.2. Biến `immutable`
+`creator`, `goal`, `startAt`, `endAt` được gán khi khởi tạo và không đổi sau deploy. Giá trị được nhúng vào runtime bytecode thay vì đọc qua storage bằng `SLOAD`. Lợi ích gas phụ thuộc đường thực thi, compiler, optimizer và cold/warm access; báo cáo này không công bố mức tiết kiệm cố định khi chưa có benchmark đối chứng.
+
+### 2.2.3. Custom errors
+Ví dụ `error GoalNotReached();` được trả về bằng `revert GoalNotReached();`. Với error **không có tham số**, revert data gồm selector 4 bytes, tính từ `keccak256("GoalNotReached()")`. Error có tham số còn chứa dữ liệu ABI-encoded của các tham số đó.
+
+So với chuỗi lỗi dài, custom errors có thể giảm bytecode và chi phí mã hóa revert data, đồng thời giúp DApp decode lỗi theo kiểu. Không suy ra số gas tiết kiệm cố định hoặc phần trăm cải thiện từ việc dùng selector; cần đo trên cấu hình biên dịch cụ thể.
+
+---
+
+## 2.3. Các mẫu thiết kế an ninh Smart Contract
+
+Nhóm áp dụng các cơ chế sau để giảm rủi ro và kiểm tra những hành vi cụ thể. Các cơ chế này không bảo đảm contract không thể có lỗi; passing tests và phân tích tĩnh không thay thế audit độc lập hoặc chứng minh hình thức.
+
+### 2.3.1. Checks-Effects-Interactions (CEI) và guard
+1. **Checks:** kiểm tra deadline, mục tiêu và khoản ghi nhận của người gọi.
+2. **Effects:** cập nhật sổ sách trước khi trao quyền thực thi cho contract ngoài.
+3. **Interactions:** chuyển ETH, kiểm tra kết quả; revert nếu không chuyển được.
 
 ```solidity
-// Minh họa CEI trong hàm hoàn tiền refund()
 function refund() external nonReentrant {
-    // 1. CHECKS: Kiểm tra hết hạn & không đạt mục tiêu
     if (block.timestamp < endAt) revert CampaignActive();
     if (pledged >= goal) revert GoalAlreadyReached();
+
     uint256 balance = pledgedAmount[msg.sender];
     if (balance == 0) revert NothingToRefund();
 
-    // 2. EFFECTS: Xóa số dư người đóng góp về 0 TRƯỚC KHI chuyển tiền
     pledgedAmount[msg.sender] = 0;
+    pledged -= balance;
+    emit Refund(msg.sender, balance);
 
-    // 3. INTERACTIONS: Gửi ETH trả về ví
     (bool success, ) = payable(msg.sender).call{value: balance}("");
     if (!success) revert TransferFailed();
 }
 ```
-* **Tại sao an toàn:** Nếu kẻ tấn công dùng hợp đồng thông minh độc hại gọi đệ quy ngược lại hàm `refund()` trong hàm `receive()`, lúc này biến `pledgedAmount` của hắn đã bị gán bằng 0 ở bước Effects, lần gọi lặp thứ hai sẽ lập tức bị chặn đứng bởi lệnh kiểm tra `NothingToRefund()`.
 
-### 2.3.2. Mô hình Rút tiền Chủ động (Pull over Push Payments)
-Trong bài toán hoàn tiền khi chiến dịch thất bại:
-* **Mô hình Đẩy (Push Payment - Không an toàn):** Hợp đồng dùng vòng lặp `for` để tự động chuyển trả tiền cho từng người trong danh sách. Nếu địa chỉ thứ 50 trong số 1,000 người là một contract cố tình viết hàm nhận tiền bị `revert`, toàn bộ giao dịch của 999 người còn lại sẽ bị rollback theo (lỗ hổng **DoS with Unexpected Revert**), hoặc giao dịch vượt trần Gas Limit của block.
-* **Mô hình Kéo (Pull Payment - Tuyệt đối an toàn):** Hợp đồng không tự động gửi tiền. Thay vào đó, mỗi người ủng hộ tự chủ động phát giao dịch gọi hàm `refund()` để rút phần tiền của riêng mình. Sự cố từ một địa chỉ ví cá nhân hoàn toàn bị cô lập và không ảnh hưởng đến bất kỳ người nào khác trong hệ sinh thái.
+**Hai lớp cần phân biệt:**
+* CEI đưa khoản ghi nhận của người gọi về 0 và giảm tổng `pledged` trước external call. Nếu xét riêng các checks của `refund()`, khoản ghi nhận bằng 0 sẽ không cho rút lần nữa.
+* Triển khai thực tế còn có modifier `nonReentrant` **tự cài đặt**. Khi callback tái nhập `refund()`, guard chạy trước phần thân và trả về `ReentrancyGuardTriggered`, không phải `NothingToRefund`. Test EVM kiểm tra selector này; không tuyên bố đã import OpenZeppelin.
+* Guard là khóa tái nhập trong cùng chuỗi lời gọi, không phải cơ chế xử lý đa luồng. `pledge()`/`receive()` không có external call nên không đặt guard; không suy rộng rằng mọi kiểu reentrancy đều được loại bỏ.
+* Nếu người nhận từ chối ETH, `TransferFailed` rollback các thay đổi của lời gọi, bao gồm mapping, tổng ghi nhận và event. Bộ test kiểm tra rollback/retry cho refund, unpledge, claim và sweep.
 
-### 2.3.3. So sánh Lệnh chuyển tiền: `transfer` vs `send` vs `call`
-| Phương thức | Giới hạn Gas chuyển tiếp | Xử lý khi thất bại | Đánh giá an toàn hiện nay |
+### 2.3.2. Pull-over-Push payments
+Push bằng một vòng lặp có thể khiến một người nhận revert làm thất bại cả giao dịch, hoặc vượt giới hạn gas. Với Pull, mỗi backer tự gửi giao dịch `refund()`; người nhận từ chối ETH có thể không rút được khoản của họ, nhưng không buộc giao dịch refund của backer khác thất bại.
+
+Mô hình không tự hoàn tiền khi deadline đến; backer cần gọi hàm và trả gas. Test EVM dùng một receiver từ chối ETH cùng một backer thông thường để kiểm tra tính độc lập này.
+
+### 2.3.3. `transfer`, `send` và `call`
+| Phương thức | Gas chuyển tiếp | Kết quả khi thất bại | Điều cần lưu ý |
 | :--- | :--- | :--- | :--- |
-| `transfer()` | Cố định 2,300 gas | Tự động Revert | **Đã lỗi thời:** 2,300 gas không đủ nếu ví nhận là Smart Contract đa chữ ký (Gnosis Safe) sau bản cập nhật EIP-1884. |
-| `send()` | Cố định 2,300 gas | Trả về `false` | **Không khuyến khích:** Dễ bị lập trình viên bỏ quên việc kiểm tra giá trị trả về boolean. |
-| **`call{value: ...}("")`** | Chuyển tiếp toàn bộ gas khả dụng | Trả về `(bool, bytes)` | **Khuyến nghị chính thức:** Linh hoạt cho mọi loại ví; an toàn tuyệt đối khi kết hợp cùng mô hình **CEI** và **ReentrancyGuard**. |
+| `transfer()` | Stipend 2.300 gas | Revert | Có thể không tương thích với logic nhận ETH cần nhiều gas. Không dùng stipend làm bằng chứng chống reentrancy. |
+| `send()` | Stipend 2.300 gas | `false` | Người gọi phải kiểm tra kết quả. |
+| `call{value: amount}("")` | Chuyển tiếp gas theo quy tắc CALL/EIP-150, không phải toàn bộ gas không giới hạn | `(bool, bytes)` | Linh hoạt hơn nhưng trao quyền thực thi cho người nhận; cần kiểm tra kết quả, CEI và bảo vệ tái nhập phù hợp. |
+
+### 2.3.4. Forced ETH và bất biến sổ sách
+`receive()` không chặn được mọi cách đưa ETH vào contract. Sau [EIP-6780](https://eips.ethereum.org/EIPS/eip-6780), `SELFDESTRUCT` vẫn chuyển balance tới địa chỉ đích kể cả với contract cũ; ngoại lệ tạo và hủy trong cùng transaction liên quan đến việc xóa code/storage/account.
+
+* `pledged == Σ pledgedAmount` là bất biến sổ sách cần duy trì.
+* Không khẳng định `balance == pledged` trong mọi trạng thái: forced ETH có thể làm balance lớn hơn; sau claim thành công balance có thể bằng 0 trong khi sổ sách góp vẫn còn.
+* `sweepExcessEther()` chỉ cho creator lấy phần chênh dương `balance - pledged`, không bắt buộc hết hạn. Đây không phải hàm rút mọi ETH bị gửi vào ở mọi thời điểm; cần xét trạng thái và điều kiện thực tế của code.
 
 ---
 
-## 2.4. Công nghệ Tương tác Phía Máy khách (Web3 Client)
+## 2.4. Công nghệ tương tác phía máy khách (Web3 client)
 
-### 2.4.1. Thư viện Ethers.js v6
-Ethers.js là thư viện JavaScript hoàn chỉnh cho phép ứng dụng web kết nối và tương tác với máy ảo EVM:
-* **Provider:** Kết nối trừu tượng chỉ đọc tới các nút mạng Blockchain (qua RPC URL hoặc `window.ethereum`).
-* **Signer:** Đại diện cho tài khoản ví có khả năng ký số giao dịch mật mã.
-* **Contract Interface:** Tự động phân tích chuỗi giao diện nhị phân **ABI (Application Binary Interface)** thành các hàm JavaScript có thể gọi được trực tiếp.
+### 2.4.1. Ethers.js v6
+* **Provider:** truy cập dữ liệu mạng qua RPC; hỗ trợ `eth_call`, đọc block, balance và receipt.
+* **Signer:** đại diện tài khoản có khả năng yêu cầu ký/gửi giao dịch. Đổi tài khoản ví cần cập nhật signer và contract instance, không chỉ thay địa chỉ hiển thị.
+* **ABI/Contract:** mã hóa calldata và giải mã giá trị trả về, event, custom error. Đọc được `goal()` là kiểm tra kết nối cơ bản, không chứng minh địa chỉ đích là đúng contract hoặc đúng phiên bản mã nguồn.
 
-### 2.4.2. Cơ chế Ký số Giao dịch Offline qua MetaMask
-MetaMask hoạt động như một cầu nối bảo mật (Bridge). Khi người dùng nhấn nút *"Đóng Góp ETH"* trên giao diện DApp:
-1. Giao diện Web đóng gói payload gồm: địa chỉ đích (`to`), số ETH (`value`), và mã hex của hàm cần gọi (`data`).
-2. Payload được chuyển tiếp cho extension MetaMask.
-3. MetaMask hiển thị cửa sổ xác nhận chi tiết phí gas. Private Key của người dùng thực hiện thuật toán ký số đường cong elip **ECDSA (secp256k1)** ngay trên môi trường cục bộ của trình duyệt.
-4. Giao dịch đã ký (Signed Transaction) được phát sóng (broadcast) vào mạng lưới Mempool của Ethereum mà không bao giờ để lộ khóa riêng ra môi trường web.
+### 2.4.2. Ký, gửi và xác nhận giao dịch
+1. DApp xác định chain ID, địa chỉ contract và tài khoản; dùng `ethers.parseEther` chuyển chuỗi số tiền thành wei mà không qua số thực JavaScript.
+2. Tạo yêu cầu giao dịch với `to`, `data`, `value`; MetaMask hiển thị thông tin và phí để người dùng xác nhận.
+3. Với tài khoản dùng khóa secp256k1, ví ký giao dịch cục bộ; DApp không cần nhận khóa riêng. Ví có thể có các cơ chế lưu khóa/ký khác, nên đây là mô hình của ví dùng trong demo.
+4. Ví/provider gửi giao dịch tới mạng. Có tx hash chưa có nghĩa đã thực thi thành công; chờ receipt, kiểm tra kết quả và đọc lại state.
+5. `eth_call` là thực thi đọc/mô phỏng qua RPC, không tạo giao dịch được đưa vào block. Giao dịch được đưa vào block rồi revert vẫn có thể tốn gas.
+
+Sandbox, test Hardhat EVM và kết nối MetaMask là ba tầng minh chứng khác nhau. Không gọi thay đổi JavaScript là giao dịch on-chain; chỉ ghi đã thử trên Sepolia khi có chain ID, địa chỉ, hash và receipt tương ứng.
