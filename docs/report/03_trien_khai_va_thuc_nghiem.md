@@ -2,200 +2,155 @@
 
 ---
 
-## 3.1. Kiến trúc Hệ thống và Thiết kế Máy Trạng Thái
+## 3.1. Kiến trúc hệ thống và máy trạng thái
 
-### 3.1.1. Sơ đồ Máy trạng thái (State Machine)
-Toàn bộ logic nghiệp vụ của hợp đồng được điều phối chặt chẽ dựa trên hai biến quyết định: **Số tiền tích lũy (`pledged`)** và **Thời gian khối (`block.timestamp`)** so với thời điểm hết hạn (`endAt`):
+### 3.1.1. Máy trạng thái
+Trạng thái trả về từ `state()` được tính từ `claimed`, `block.timestamp`, `endAt`, `pledged` và `goal`. Đủ vốn trước hạn vẫn là `Active`. Không có tác vụ tự động gửi tiền hoặc ghi trạng thái mới vào storage khi đồng hồ đến deadline.
 
 ```mermaid
 stateDiagram-v2
-    [*] --> Active: Deploy Contract (Goal > 0, Duration > 0)
-    
-    state Active {
-        [*] --> AcceptingPledges
-        AcceptingPledges --> AcceptingPledges: pledge() [ETH nạp vào quỹ]
-        AcceptingPledges --> AcceptingPledges: unpledge() [Rút cọc khi còn hạn]
-    }
-
-    Active --> Successful: block.timestamp >= endAt VÀ pledged >= goal
-    Active --> Failed: block.timestamp >= endAt VÀ pledged < goal
-
-    state Successful {
-        [*] --> AwaitingClaim
-        AwaitingClaim --> Claimed: claim() [Chủ dự án rút toàn bộ số dư]
-    }
-
-    state Failed {
-        [*] --> AwaitingRefund
-        AwaitingRefund --> AwaitingRefund: refund() [Backers tự rút lại 100% tiền]
-    }
-
-    Claimed --> [*]
+    [*] --> Active: Deploy hợp lệ
+    Active --> Active: pledge / receive / unpledge trước endAt
+    Active --> Successful: timestamp >= endAt và pledged >= goal
+    Active --> Failed: timestamp >= endAt và pledged < goal
+    Successful --> Claimed: creator gọi claim thành công
+    Failed --> Failed: từng backer gọi refund
 ```
 
-### 3.1.2. Bảng Chuyển Trạng Thái và Ma Trận Phân Quyền Hàm
-| Trạng thái | Điều kiện kích hoạt | Hành vi hàm `pledge()` | Hành vi hàm `unpledge()` | Hành vi hàm `claim()` | Hành vi hàm `refund()` |
-| :--- | :--- | :---: | :---: | :---: | :---: |
-| **`Active`** | `block.timestamp < endAt` | ✅ Cho phép | ✅ Cho phép | ❌ Revert (`CampaignActive`) | ❌ Revert (`CampaignActive`) |
-| **`Successful`** | `block.timestamp >= endAt` && `pledged >= goal` | ❌ Revert (`CampaignEnded`) | ❌ Revert (`CampaignEnded`) | ✅ **Chủ dự án được rút** | ❌ Revert (`GoalAlreadyReached`) |
-| **`Failed`** | `block.timestamp >= endAt` && `pledged < goal` | ❌ Revert (`CampaignEnded`) | ❌ Revert (`CampaignEnded`) | ❌ Revert (`GoalNotReached`) | ✅ **Từng Backer được rút** |
-| **`Claimed`** | Sau khi Chủ dự án đã rút tiền | ❌ Revert (`CampaignEnded`) | ❌ Revert (`CampaignEnded`) | ❌ Revert (`AlreadyClaimed`) | ❌ Revert (`GoalAlreadyReached`) |
+Các mũi tên do deadline biểu diễn thay đổi **trạng thái được tính khi đọc**, không phải giao dịch tự thực thi. Claim/refund cần lời gọi và phí gas của người gửi giao dịch.
+
+### 3.1.2. Điều kiện và phân quyền
+| Trạng thái | Điều kiện đọc | pledge/receive | unpledge | claim | refund |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `Active` | Chưa claimed, `timestamp < endAt` | Giá trị > 0 | Người gọi rút khoản của họ, amount hợp lệ | Creator vẫn bị chặn vì chưa hết hạn | Bị chặn vì chưa hết hạn |
+| `Successful` | Chưa claimed, hết hạn và đủ goal | Bị chặn | Bị chặn | Chỉ creator | Bị chặn vì đủ goal |
+| `Failed` | Chưa claimed, hết hạn và thiếu goal | Bị chặn | Bị chặn | Bị chặn vì thiếu goal | Người có khoản ghi nhận tự rút |
+| `Claimed` | `claimed == true` | Bị chặn | Bị chặn | Creator không được claim lần hai | Bị chặn vì pledged vẫn >= goal |
+
+`onlyCreator` chạy trước phần thân claim/sweep, nên ví không phải creator nhận `Unauthorized` ngay cả khi deadline hoặc mục tiêu cũng chưa thỏa. `sweepExcessEther()` không nằm trong luồng quyết toán thông thường: chỉ creator, balance phải lớn hơn pledged, không bắt buộc hết hạn.
 
 ---
 
-## 3.2. Cấu trúc Mã nguồn và Triển khai Smart Contract
+## 3.2. Mã nguồn và triển khai Smart Contract
 
-### 3.2.1. Cấu trúc Thư mục Dự án
-Dự án được chuẩn hóa theo cấu trúc mô-đun:
+### 3.2.1. Cấu trúc thư mục
 ```text
-lab02-crowdfunding-smart-contract/
-├── contracts/
-│   ├── Crowdfunding.sol            # Hợp đồng thông minh cốt lõi
-│   └── CrowdfundingFactory.sol     # Hợp đồng quản lý nhiều chiến dịch (Launchpad)
-├── test/
-│   └── Crowdfunding.test.js        # Bộ kiểm thử tự động 15 kịch bản (100% pass)
-├── scripts/
-│   └── simulate.js                 # Kịch bản mô phỏng giao diện dòng lệnh CLI
-├── demo/
-│   ├── index.html                  # Giao diện Web DApp (Trục kép Vốn & Thời gian)
-│   ├── style.css                   # Hệ thống giao diện Dark Glassmorphic Web3
-│   └── app.js                      # Bộ điều khiển Sandbox và kết nối Ethers.js
-└── docs/                           # Bộ tài liệu báo cáo kỹ thuật hoàn chỉnh
+contracts/
+├── Crowdfunding.sol             # Contract chính
+├── CrowdfundingFactory.sol      # Tạo/tra cứu các campaign độc lập
+└── testing/Attackers.sol         # ReentrancyAttacker, ForceEther, RejectingReceiver
+test/
+├── Crowdfunding.test.js         # 18 test mô hình JavaScript
+└── Crowdfunding.evm.test.js     # 41 test thực thi Solidity trên Hardhat EVM
+demo/
+├── index.html                   # Giao diện trình diễn desktop/projector
+├── style.css                    # Theme sáng/tối
+└── app.js                       # Sandbox và connector Web3
 ```
 
-### 3.2.2. Phân tích Các Hàm Cốt lõi trong `Crowdfunding.sol`
+Helper trong `contracts/testing/` chỉ dành cho test. `RejectingReceiver` có điều khiển không phân quyền để kiểm thử, không dùng làm ví production.
 
-#### 1. Hàm khởi tạo `constructor`:
-Khởi tạo chiến dịch với người hưởng lợi (`creator`), mục tiêu (`goal`), và tính toán mốc thời gian hết hạn cố định `endAt = startAt + _durationSeconds`. Timestamp sử dụng kiểu `uint64` (thay vì `uint32`) để loại trừ rủi ro tràn số vào tháng 2/2106; do các biến này là `immutable` (nhúng bytecode, không chiếm storage slot) nên chi phí tăng thêm không đáng kể.
+### 3.2.2. Các hàm cốt lõi trong Crowdfunding.sol
+Mã tham chiếu: [Crowdfunding.sol](../../contracts/Crowdfunding.sol).
 
-#### 2. Hàm đóng góp `pledge()`:
-Cho phép người dùng nạp ETH vào hợp đồng khi chiến dịch còn trong hạn (`block.timestamp < endAt`). Cập nhật tổng số tiền quyên góp và số dư cá nhân của từng backer:
-```solidity
-// Cố ý KHÔNG dùng nonReentrant: pledge() không có external call nào,
-// CEI là đủ. Guard sẽ tốn ~5.800 gas/lần VÀ tạo corner case griefing
-// (backer là hợp đồng có receive() tự pledge sẽ không refund được).
-function pledge() external payable {
-    if (block.timestamp >= endAt) revert CampaignEnded();
-    if (msg.value == 0) revert ZeroPledge();
+#### 1. Hàm khởi tạo `constructor`
+Kiểm tra goal khác 0 và duration trong khoảng 1 giây đến 365 ngày. Creator là địa chỉ truyền vào, hoặc `msg.sender` nếu truyền địa chỉ 0. Gán `goal`, `startAt`, `endAt`, khởi tạo guard và emit `Launch`. Timestamp dùng `uint64`; biến immutable không chiếm slot storage như biến trạng thái thông thường.
 
-    uint256 prevAmount = pledgedAmount[msg.sender]; // cache SLOAD
-    if (prevAmount == 0) {
-        contributorCount += 1;
-    }
+`state()` ưu tiên `claimed`; nếu chưa claim thì xét deadline trước rồi mới xét goal. `timeLeft()` trả về 0 tại/sau hạn; `progressBasisPoints()` biểu diễn tỷ lệ bằng basis points và có thể vượt 10.000 nếu vượt mục tiêu.
 
-    pledged += msg.value;
-    pledgedAmount[msg.sender] = prevAmount + msg.value;
+#### 2. Hàm góp vốn `pledge()` và `receive()`
+Trước deadline và với `msg.value > 0`, tăng `pledged`, tăng `pledgedAmount[msg.sender]`; nếu khoản cũ bằng 0 thì tăng `contributorCount`. Emit `Pledge`.
 
-    emit Pledge(msg.sender, msg.value, pledged);
-}
-```
+`receive()` thực hiện cùng quy tắc ghi nhận cho chuyển ETH thông thường có calldata rỗng. Hai hàm không có external call nên không dùng guard. Không suy ra chúng ngăn được mọi đường chuyển ETH, hoặc việc bỏ guard đã có số gas tiết kiệm được đo cố định.
 
-#### 3. Hàm rút cọc sớm `unpledge()`:
-Cho phép người ủng hộ rút lại một phần hoặc toàn bộ số tiền đã góp nếu chiến dịch vẫn đang diễn ra. Hàm áp dụng mô hình CEI để trừ số dư trước khi chuyển trả ETH.
+#### 3. Hàm rút trước hạn `unpledge(uint256)`
+Yêu cầu `timestamp < endAt`, amount dương và không vượt khoản của người gọi. Trừ tổng và mapping trước khi chuyển ETH; rút hết thì giảm bộ đếm. Chuyển tiền lỗi gây `TransferFailed` và rollback cả phần trừ/bộ đếm. Test còn kiểm tra rút hết rồi góp lại và từ chối rút tại đúng `endAt`.
 
-#### 4. Hàm giải ngân `claim()`:
-Chỉ dành riêng cho chủ dự án (`onlyCreator`), yêu cầu cả hai điều kiện: chiến dịch đã hết hạn (`block.timestamp >= endAt`) VÀ tổng tiền đạt mục tiêu (`pledged >= goal`). Chuyển toàn bộ số dư thực tế trong hợp đồng về ví chủ dự án:
-```solidity
-function claim() external onlyCreator nonReentrant {
-    if (block.timestamp < endAt) revert CampaignActive();
-    if (pledged < goal) revert GoalNotReached();
-    if (claimed) revert AlreadyClaimed();
+#### 4. Hàm giải ngân `claim()`
+Chỉ creator, sau hạn, đủ goal và chưa claimed. Đặt `claimed = true`, lấy **toàn bộ balance thực tế**, emit `Claim`, chuyển ETH; nếu chuyển lỗi thì rollback cả cờ claimed. Do đó khoản gửi vượt goal hoặc forced ETH có mặt lúc claim được tính vào tiền chuyển.
 
-    claimed = true;
-    uint256 balanceToClaim = address(this).balance;
+Claim thành công không xóa `pledged`/mapping; đây là sổ sách giữ lại sau quyết toán, không phải tiền vẫn còn trong escrow. Ví thường không được claim; creator đủ vốn nhưng gọi tại `endAt - 1` vẫn bị `CampaignActive`.
 
-    emit Claim(creator, balanceToClaim);
+#### 5. Hàm hoàn tiền `refund()`
+Sau hạn và `pledged < goal`, người gọi có khoản ghi nhận dương được tự rút. Xóa khoản cá nhân, giảm pledged, emit `Refund`, sau đó chuyển ETH qua call. Guard chạy trước phần thân nên nested refund trả `ReentrancyGuardTriggered`; CEI là lớp bảo vệ sổ sách riêng. Đoạn code đầy đủ được trích ở mục 2.3.1.
 
-    (bool success, ) = payable(creator).call{value: balanceToClaim}("");
-    if (!success) revert TransferFailed();
-}
-```
+Nếu chuyển ETH lỗi, sổ sách rollback. Một receiver từ chối ETH không làm giao dịch refund riêng của backer khác thất bại. Refund trả khoản góp còn ghi nhận, không hoàn phí gas của các giao dịch trước đó. `contributorCount` chỉ bị giảm ở nhánh unpledge toàn bộ, không giảm trong refund; không dùng nó để suy ra số người chưa nhận refund sau thất bại.
 
-#### 5. Hàm hoàn tiền `refund()`:
-Áp dụng mô hình Pull Payment. Khi chiến dịch kết thúc mà không đạt chỉ tiêu, từng người ủng hộ gọi hàm này để nhận lại đúng số tiền mình đã gửi. Số dư được xóa về 0 trước khi thực hiện chuyển tiền qua `call`:
-```solidity
-function refund() external nonReentrant {
-    if (block.timestamp < endAt) revert CampaignActive();
-    if (pledged >= goal) revert GoalAlreadyReached();
+#### 6. Hàm quét phần dư `sweepExcessEther()`
+Chỉ creator, có guard, yêu cầu `balance > pledged`; chuyển phần chênh dương và không giảm sổ sách góp. Không yêu cầu hết hạn. Chuyển lỗi gây revert; test kiểm tra phần góp vẫn còn nguyên khi sweep thất bại và sau khi thử lại thành công.
 
-    uint256 balance = pledgedAmount[msg.sender];
-    if (balance == 0) revert NothingToRefund();
+Sau [EIP-6780](https://eips.ethereum.org/EIPS/eip-6780), SELFDESTRUCT vẫn chuyển balance kể cả khi contract gửi đã tồn tại từ trước; điều kiện cùng transaction liên quan tới xóa code/storage. Vì vậy không dùng `balance == pledged` như bất biến mọi trạng thái. Sweep cũng không phải cơ chế lấy lại mọi khoản ETH bất kỳ gửi sau quyết toán; luôn xét điều kiện hiện tại của hàm.
 
-    // CEI: Xóa số dư trước khi gửi tiền
-    pledgedAmount[msg.sender] = 0;
-    pledged -= balance; // giữ bất biến pledged == Σ pledgedAmount
+### 3.2.3. CrowdfundingFactory.sol
+[Factory](../../contracts/CrowdfundingFactory.sol) tạo campaign với **creator là người gọi factory**, không phải địa chỉ factory. Mỗi campaign có storage và số dư riêng. Factory giữ danh sách, tra cứu theo creator và phân trang `getCampaigns(offset, limit)` với `MAX_PAGE_SIZE = 100`.
 
-    emit Refund(msg.sender, balance);
-
-    (bool success, ) = payable(msg.sender).call{value: balance}("");
-    if (!success) revert TransferFailed();
-}
-```
-
-#### 6. Hàm quét ETH dư `sweepExcessEther()`:
-Trung hòa vector tấn công **Forced-ETH**: kẻ xấu có thể ép gửi ETH vào hợp đồng (selfdestruct với contract tạo trong cùng transaction — sau EIP-6780; hoặc đầy đủ trên các chain chưa áp dụng). Phần ETH dư này làm lệch bất biến `balance == pledged` và trong chiến dịch THẤT BẠI sẽ bị kẹt vĩnh viễn vì `refund()` chỉ chi trả theo `pledgedAmount`. Hàm chỉ cho phép creator rút **đúng phần dư** `address(this).balance - pledged`, tuyệt đối không đụng vào tiền của người ủng hộ (revert nếu không có dư):
-```solidity
-function sweepExcessEther() external onlyCreator nonReentrant returns (uint256 swept) {
-    if (address(this).balance <= pledged) revert NothingToRefund();
-    swept = address(this).balance - pledged;
-    emit Sweep(creator, swept);
-    (bool success, ) = payable(creator).call{value: swept}("");
-    if (!success) revert TransferFailed();
-}
-```
-
-### 3.2.3. Hợp đồng Mở rộng `CrowdfundingFactory.sol`
-Áp dụng Factory Pattern, hợp đồng cho phép bất kỳ người dùng nào triển khai một chiến dịch mới thông qua hàm `createCampaign()`. Factory lưu trữ danh sách các chiến dịch đã triển khai, phân loại theo địa chỉ người tạo và hỗ trợ phân trang (Pagination) để phục vụ cho các ứng dụng bệ phóng (Launchpad) quy mô lớn.
+Test hiện có kiểm tra tạo campaign/event, phân trang, offset ngoài biên và độc lập. Test yêu cầu limit 150 trên danh sách chỉ có 5 campaign chưa tự nó chứng minh trả tối đa 100 khi có hơn 100 campaign; không gọi đây là coverage đầy đủ cho mọi tình huống phân trang.
 
 ---
 
-## 3.3. Kết quả Kiểm thử Tự động — Kiến trúc 2 Tầng (Mock + EVM thật)
+## 3.3. Kiểm thử hai tầng và minh chứng theo thành viên
 
-Bộ kiểm thử gồm **52 test cases** trên 2 tầng độc lập, toàn bộ **100% PASS**:
+**Kết quả lần chạy `npm test` ngày 2026-11-08: 18 test mô hình JavaScript + 41 test Hardhat EVM đạt, không có test thất bại.** Số lượng test không phải tỷ lệ statement/branch coverage.
 
-* **Tầng 1 — `test/Crowdfunding.test.js` (18 kịch bản, Mock spec-based):** phản chiếu logic nghiệp vụ bằng JS thuần, chạy không cần node EVM, kiểm tra phân nhánh và điều kiện biên nhanh.
-* **Tầng 2 — `test/Crowdfunding.evm.test.js` (34 kịch bản, Hardhat Network):** biên dịch và thực thi **bytecode thật** của `Crowdfunding.sol` + `CrowdfundingFactory.sol` trên EVM (solc 0.8.20, ethers v6). Tầng này là bằng chứng hành vi on-chain.
+* Tầng mô hình: `test/Crowdfunding.test.js` kiểm tra logic JavaScript, không biên dịch/thực thi Solidity.
+* Tầng EVM: `test/Crowdfunding.evm.test.js` chạy bytecode trên Hardhat Network cục bộ, solc 0.8.20, optimizer 200 runs. Đây không phải bằng chứng đã ký/broadcast giao dịch lên Sepolia.
+* Hardhat cũng nạp file test mô hình trong lúc discovery nên log 18 test có thể xuất hiện hai lần khi chạy `npm test`; không đếm thành 36 test mô hình.
 
-| Nhóm Kiểm thử (Tầng 2) | Phạm vi | Kết quả |
-| :--- | :--- | :---: |
-| **1. Khởi tạo & Validation** | Tham số đúng; revert `GoalCannotBeZero`; revert `InvalidDuration` khi duration = 0 **và** > 365 ngày; creator mặc định khi truyền địa chỉ 0. | ✅ PASS |
-| **2. Pledge / Unpledge / receive()** | Đa backer; `ZeroPledge`; **fallback `receive()` nhận ETH trực tiếp** (cả nhánh thành công lẫn revert); unpledge một phần / quá số dư / sau hạn. | ✅ PASS |
-| **3. Vòng đời Thành công** | State machine `Active→Successful→Claimed`; `AlreadyClaimed` khi claim 2 lần; `Unauthorized`; **oversubscribed (claim nhận cả 11 ETH khi goal 10)**; biên `ts == endAt` cho claim. | ✅ PASS |
-| **4. Vòng đời Thất bại & Refund** | `Failed`; `GoalNotReached`; refund đúng 100% và `pledged` giảm tương ứng; chặn refund kép; biên `ts == endAt` chặn pledge; đạt goal đúng từng wei. | ✅ PASS |
-| **5. Bảo mật (Attack Simulation)** | `ReentrancyAttacker` (hợp đồng tấn công thật, chặn nested refund bằng guard — có bằng chứng revert data); **Forced-ETH bằng selfdestruct** + `sweepExcessEther()` trung hòa; claim hút cả ETH bị ép. | ✅ PASS |
-| **6. Invariant Fuzz** | 80 thao tác ngẫu nhiên có hạt (deterministic PRNG): bất biến `pledged == Σ pledgedAmount` và `balance == pledged` giữ vững qua mọi thao tác. | ✅ PASS |
-| **7. CrowdfundingFactory** | Deploy thật + event; phân trang slice; offset ngoài biên; clamp `limit ≤ MAX_PAGE_SIZE` (chống RPC DoS); độc lập trạng thái giữa các chiến dịch. | ✅ PASS |
+| Nhóm EVM | Minh chứng chính | Giới hạn |
+| :--- | :--- | :--- |
+| Khởi tạo | Creator/goal/duration, input không hợp lệ | Các đầu vào đã chọn |
+| Góp/rút | Đa backer, receive, số 0, rút một phần, rút hết/góp lại, quá khoản góp, tại/sau hạn | Không suy ra mọi chuỗi thao tác |
+| Thành công | Đủ goal nhưng trước hạn; claim đúng endAt; sai quyền; claim hai lần; vượt goal | Không chứng minh khả năng đưa giao dịch vào block trước hạn |
+| Thất bại/refund | Điều kiện thất bại, giảm sổ sách, hoàn hai lần, đủ goal đúng từng wei | Người gọi vẫn cần trả gas |
+| An toàn | Nested refund; forced ETH; sweep; rollback/retry ở unpledge/claim/refund/sweep; backer khác vẫn refund được | Các receiver/callback đã mô hình hóa |
+| Fuzz | 80 thao tác pledge/unpledge, 4 actor, seed `0xC0FFEE`; kiểm tra tổng mapping và balance | Chỉ còn hạn, không claim/refund/forced ETH; không phải bất biến toàn lifecycle |
+| Factory | Deploy, tra cứu/phân trang, độc lập campaign | Chưa kiểm tra limit cap trên hơn 100 campaign |
 
-**Kết luận kiểm thử:** Toàn bộ **52/52 test cases PASS (100%)** — bao phủ 100% custom errors, các nhánh biên thời gian (`ts == endAt`, `ts == endAt ± 1`), đồng thời xác thực bằng EVM thật thay vì chỉ mô phỏng.
+### Ba test tiêu biểu mỗi thành viên
+Chạy từ thư mục repository; regex dưới chọn test hiện có theo tên:
 
-### 3.3.1. Phân tích tĩnh Slither (Static Analysis)
+```bash
+# TV1: rút một phần, rút hết/góp lại, chặn tại endAt — 3 test
+npx hardhat test test/Crowdfunding.evm.test.js --grep "Unpledge một phần|TV1:"
 
-Đã chạy **Slither** (crytic) với solc 0.8.20 trên toàn bộ contracts. Kết quả: **0 phát hiện mức Medium/High**; 4 phát hiện Informational đều được triage và chấp nhận có lý do (timestamp-comparison theo thiết kế, low-level `call` theo khuyến cáo Ethereum Foundation, pragma range, naming convention). Chi tiết bảng triage tại [`docs/security/slither-report.md`](file:///d:/Hoc/BlockChain/lab02-crowdfunding-smart-contract/docs/security/slither-report.md).
+# TV2: đủ vốn trước hạn, claim đúng endAt, sai quyền — 3 test
+npx hardhat test test/Crowdfunding.evm.test.js --grep "TV2:|Người lạ claim|claim hợp lệ TẠI"
+
+# TV3: rollback/cô lập lỗi, nested refund, forced ETH — 3 test
+npx hardhat test test/Crowdfunding.evm.test.js --grep "refund lỗi rollback|ReentrancyAttacker:|Forced ETH qua"
+```
+
+| Người trình bày | Bảng trước → sau cần giải thích |
+| :--- | :--- |
+| TV1 | Góp 3, rút 1: khoản cá nhân 3 → 2, pledged giảm 1, bộ đếm giữ nguyên. Rút toàn bộ: khoản về 0 và bộ đếm giảm; góp lại tăng bộ đếm. |
+| TV2 | Đủ goal tại endAt − 1: Active, claimed false, quỹ chưa chuyển. Tại endAt: creator claim được; sau claim claimed true, balance 0, sổ sách góp vẫn còn. |
+| TV3 | Receiver từ chối refund: mapping/pledged/balance không mất; backer khác vẫn refund được. Khi receiver chấp nhận ETH, retry hoàn khoản hợp lệ. |
+
+**Giới hạn kết luận:** các test xác nhận những kịch bản được thực thi, chưa có số liệu coverage để nói bao phủ 100% custom errors/branches. Chưa kiểm chứng mọi seed, mọi kiểu callback hay toàn bộ vòng đời trong fuzz. Không suy ra an toàn tuyệt đối.
+
+### 3.3.1. Phân tích tĩnh Slither
+Chạy lại Slither 0.11.6 với solc 0.8.20 trên từng contract production: Crowdfunding có 13 instance (7 Low + 6 Informational); factory kèm dependency có 16 (7 Low + 9 Informational). Không có High/Medium ở hai lượt. Bốn là số nhóm detector, không phải bốn phát hiện Informational. Lượt factory lặp lại kết quả của dependency nên không cộng hai tổng.
+
+Xem [raw output, source hash, lệnh và triage](../security/slither-report.md). Kết quả không phải audit độc lập; helper kiểm thử không nằm trong hai lượt phân tích này.
 
 ---
 
-## 3.4. Thiết kế Giao diện Web DApp và Thực nghiệm Trực quan
+## 3.4. Giao diện demo và thực nghiệm
 
-Nhóm phát triển giao diện Web DApp tối giản, hiện đại theo tiêu chuẩn Web3 tại thư mục `demo/`:
+### 3.4.1. Trình bày mục tiêu, thời hạn và điều kiện
+Giao diện desktop/projector có theme sáng/tối, hiển thị số tiền/goal, tiến độ và số dư escrow. Ba điều kiện mục tiêu — thời hạn — quyền creator được đặt cạnh thao tác. Ledger/log giúp giải thích thay đổi sổ sách; phần chi tiết Solidity là thông tin bổ trợ.
 
-### 3.4.1. Thiết kế Trục Tiến Độ Kép (Dual-Progress Horizon)
-Giao diện trực quan hóa bài toán thành 2 trục độc lập bám sát logic hợp đồng:
-1. **Trục 1 (Tiền vốn):** Hiển thị lượng ETH đã gọi trên mục tiêu 10.00 ETH, tỷ lệ %, thanh gradient đổi màu và vạch cờ đích `🎯 10 ETH`.
-2. **Trục 2 (Thời gian & Hạn chót):** Dải thanh thời gian chia làm 2 phân vùng màu sắc:
-   * **Vùng xanh (0 &rarr; 7 Ngày):** Vùng đang mở gọi vốn &rarr; Cho phép nạp và rút cọc sớm.
-   * **Vạch cờ Deadline (Ngày thứ 7):** Cột mốc phân định ranh giới hạn chót.
-   * **Vùng đỏ (Sau Ngày 7):** Vùng kết toán &rarr; Khóa đóng góp, kích hoạt nút Rút vốn hoặc Hoàn tiền.
-   * **Thanh trượt tương tác (Interactive Timeline Slider):** Cho phép kéo thả trực tiếp hoặc bấm các nút mốc nhanh (`3.5d`, `6.9d`, `🏁 7.1d`) để tua bước nhảy thời gian qua hạn chót ngay lập tức mà không cần chờ 7 ngày thực tế.
+Toolbar sandbox cho phép chọn kịch bản và mốc thời gian, gồm 6.9d và **7.0d đúng hạn**. Điều khiển này tác động JavaScript, không chỉnh timestamp trên Ethereum/Hardhat. Nút bị khóa minh họa quy tắc UI; test EVM mới là bằng chứng contract từ chối lời gọi trực tiếp không hợp lệ.
 
-### 3.4.2. Kết quả Thực nghiệm 2 Kịch bản Trọng tâm:
-* **Kịch bản 1 (Thành công & Rút vốn):** Alice góp 4 ETH, Bob góp 4 ETH, Charlie góp 3 ETH (Tổng 11/10 ETH). Khi kéo timeline qua mốc ngày thứ 7, trạng thái chuyển sang **THÀNH CÔNG**, ví Chủ dự án sáng nút **"👑 Rút Vốn Dự Án"** và rút trọn vẹn 11.00 ETH về ví.
-* **Kịch bản 2 (Thất bại & Hoàn tiền):** Chỉ có Alice góp 3 ETH. Khi kéo timeline qua ngày thứ 7, trạng thái chuyển sang **THẤT BẠI**. Chủ dự án bị khóa không được rút. Ví Alice sáng nút **"💸 Hoàn Tiền (Pull Refund)"** và nhận lại đầy đủ 3.00 ETH về ví (số dư khôi phục 100%).
+### 3.4.2. Kịch bản sandbox khớp mã hiện tại
+1. **Góp/rút — TV1:** reset → Alice góp 3 ETH → rút 1 → khoản còn 2; thử rút quá khoản góp. Đây là tiền mô phỏng, không có gas thật.
+2. **Đủ vốn nhưng chưa hết hạn — TV2:** nút kịch bản chuẩn bị Alice 4 + Bob 3 + Charlie 3 = **10/10 ETH ở ngày 6.9**. Creator vẫn chưa được claim. Chuyển **7.0d**; ví thường vẫn sai quyền, creator claim được. Sau claim, escrow 0 còn pledged/mapping giữ nguyên.
+3. **Thất bại/hoàn tiền — TV3:** kịch bản chuẩn bị Alice góp **3/10 ETH, ngày 7.2**, chọn Alice. Refund đưa khoản cá nhân và tổng ghi nhận về 0; không hoàn lần hai. Số dư khôi phục trong sandbox không chứng minh ví thật được hoàn gas.
+4. **Vượt mục tiêu — dự phòng:** kịch bản riêng góp **4 + 4 + 4 = 12/10 ETH**, ngày 7.2, chọn creator. Claim nhận 12 ETH mô phỏng. Không nhầm với test EVM oversubscription dùng 11 ETH.
 
-### 3.4.3. Chế độ On-chain thật: MetaMask Web3 Connector (Ethers.js v6)
+### 3.4.3. Connector MetaMask
+Người dùng nhập địa chỉ campaign, kết nối ví trên mạng hỗ trợ. DApp tạo provider/signer/contract instance, đọc state và cập nhật quyền thao tác. Đọc được `goal()` là kiểm tra cơ bản, không xác thực hoàn toàn code ở địa chỉ đích. Cần kiểm tra chain ID, địa chỉ deploy và code/ABI đúng phiên bản.
 
-Ngoài chế độ Sandbox tức thì, DApp tích hợp **connector on-chain thật** tại panel *"🦊 MetaMask Web3 Connector"*:
-1. Người dùng dán địa chỉ hợp đồng Crowdfunding đã deploy (Sepolia Testnet hoặc node Hardhat/Anvil local) và bấm **Kết Nối Ví**.
-2. DApp khởi tạo `ethers.BrowserProvider(window.ethereum)` → yêu cầu `eth_requestAccounts` → lấy `Signer`, xác thực địa chỉ đích bằng cách đọc `goal()` (chống dán nhầm địa chỉ).
-3. Panel hiển thị trạng thái on-chain thời gian thực (`state()`, `pledged/goal`, `timeLeft()`) và **tự phân quyền nút bấm** theo trạng thái + vai trò ví (claim chỉ sáng cho creator khi `Successful`; refund chỉ sáng cho backer có số dư khi `Failed`).
-4. Mỗi thao tác (pledge/unpledge/claim/refund) được ký số **ECDSA secp256k1** ngay trong MetaMask; log hiển thị **tx hash thật** và block number sau khi xác nhận.
-5. Lỗi on-chain được decode: selector 4 bytes của từng custom error được map sang thông báo tiếng Việt (ví dụ `0x…` của `ReentrancyGuardTriggered()` → *"Phát hiện lời gọi tái nhập — bị ReentrancyGuard chặn"*).
+Mỗi giao dịch ghi hash, trạng thái chờ và receipt/block khi xác nhận; đọc RPC cập nhật state riêng, không thay thế lịch sử giao dịch. Lịch sử chỉ giữ các giao dịch gần nhất trong phiên. Đổi account cần gắn lại signer; lỗi RPC phải được phân biệt với giao dịch revert.
+
+**Mức xác minh:** browser regression với provider/contract giả lập không phải ký/broadcast MetaMask thật. Chỉ ghi kết quả thực nghiệm Sepolia khi đã có chain ID, địa chỉ, hash và receipt. Nếu demo trực tiếp gặp lỗi mạng/ví, dùng test EVM cục bộ làm phương án dự phòng và nói rõ môi trường; không trình bày log sandbox như chứng cứ on-chain.

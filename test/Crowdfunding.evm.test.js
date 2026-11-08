@@ -116,6 +116,34 @@ describe("Crowdfunding.sol — Layer 2 (EVM thật trên Hardhat Network)", func
       expect(await campaign.contributorCount()).to.equal(1n);
     });
 
+    it("TV1: rút toàn bộ rồi góp lại cập nhật contributorCount đúng", async function () {
+      const { campaign, alice } = await deployCampaign();
+      await campaign.connect(alice).pledge({ value: ONE });
+      await expect(campaign.connect(alice).unpledge(ONE))
+        .to.emit(campaign, "Unpledge").withArgs(alice.address, ONE, 0n);
+      expect(await campaign.pledged()).to.equal(0n);
+      expect(await campaign.pledgedAmount(alice.address)).to.equal(0n);
+      expect(await campaign.contributorCount()).to.equal(0n);
+      expect(await ethers.provider.getBalance(await campaign.getAddress())).to.equal(0n);
+
+      await campaign.connect(alice).pledge({ value: ONE });
+      expect(await campaign.pledged()).to.equal(ONE);
+      expect(await campaign.pledgedAmount(alice.address)).to.equal(ONE);
+      expect(await campaign.contributorCount()).to.equal(1n);
+    });
+
+    it("TV1: unpledge tại đúng endAt bị chặn, sổ sách giữ nguyên", async function () {
+      const { campaign, alice } = await deployCampaign();
+      await campaign.connect(alice).pledge({ value: ONE });
+      await helpers.time.setNextBlockTimestamp(await campaign.endAt());
+      await expect(campaign.connect(alice).unpledge(ONE))
+        .to.be.revertedWithCustomError(campaign, "CampaignEnded");
+      expect(await campaign.pledged()).to.equal(ONE);
+      expect(await campaign.pledgedAmount(alice.address)).to.equal(ONE);
+      expect(await campaign.contributorCount()).to.equal(1n);
+      expect(await ethers.provider.getBalance(await campaign.getAddress())).to.equal(ONE);
+    });
+
     it("Unpledge quá số dư → revert NothingToRefund", async function () {
       const { campaign, alice } = await deployCampaign("10", 7n * DAY);
       await campaign.connect(alice).pledge({ value: ethers.parseEther("1") });
@@ -145,6 +173,19 @@ describe("Crowdfunding.sol — Layer 2 (EVM thật trên Hardhat Network)", func
       expect(await campaign.state()).to.equal(3n); // Claimed
       expect(await campaign.claimed()).to.equal(true);
       expect(await ethers.provider.getBalance(await campaign.getAddress())).to.equal(0n);
+    });
+
+    it("TV2: đủ goal nhưng claim tại endAt - 1 vẫn revert CampaignActive", async function () {
+      const { campaign, creator, alice } = await deployCampaign("1", DAY);
+      await campaign.connect(alice).pledge({ value: ONE });
+      await helpers.time.setNextBlockTimestamp((await campaign.endAt()) - 1n);
+      await expect(campaign.connect(creator).claim())
+        .to.be.revertedWithCustomError(campaign, "CampaignActive");
+      expect(await campaign.state()).to.equal(0n);
+      expect(await campaign.timeLeft()).to.equal(1n);
+      expect(await campaign.claimed()).to.equal(false);
+      expect(await campaign.pledged()).to.equal(ONE);
+      expect(await ethers.provider.getBalance(await campaign.getAddress())).to.equal(ONE);
     });
 
     it("Claim hai lần → revert AlreadyClaimed", async function () {
@@ -253,6 +294,129 @@ describe("Crowdfunding.sol — Layer 2 (EVM thật trên Hardhat Network)", func
   // 5. BẢO MẬT: REENTRANCY / FORCED-ETH / SWEEP
   // ============================================================
   describe("5. Bảo mật: Reentrancy / Forced-ETH / sweepExcessEther", function () {
+    async function deployRejectingReceiver() {
+      const Receiver = await ethers.getContractFactory("RejectingReceiver");
+      const receiver = await Receiver.deploy();
+      await receiver.waitForDeployment();
+      return receiver;
+    }
+
+    it("TV3: refund lỗi rollback; backer khác vẫn rút được; retry thành công", async function () {
+      const { campaign, alice } = await deployCampaign("10", DAY);
+      const receiver = await deployRejectingReceiver();
+      const receiverAddress = await receiver.getAddress();
+      const campaignAddress = await campaign.getAddress();
+      await receiver.pledge(campaignAddress, { value: ONE });
+      await campaign.connect(alice).pledge({ value: 2n * ONE });
+      await helpers.time.increaseTo(await campaign.endAt());
+
+      await expect(receiver.refund(campaignAddress))
+        .to.be.revertedWithCustomError(campaign, "TransferFailed");
+      expect(await campaign.pledgedAmount(receiverAddress)).to.equal(ONE);
+      expect(await campaign.pledged()).to.equal(3n * ONE);
+      expect(await ethers.provider.getBalance(campaignAddress)).to.equal(3n * ONE);
+      expect(await ethers.provider.getBalance(receiverAddress)).to.equal(0n);
+
+      await expect(campaign.connect(alice).refund())
+        .to.emit(campaign, "Refund").withArgs(alice.address, 2n * ONE);
+      expect(await campaign.pledgedAmount(alice.address)).to.equal(0n);
+      expect(await campaign.pledgedAmount(receiverAddress)).to.equal(ONE);
+      expect(await campaign.pledged()).to.equal(ONE);
+      expect(await ethers.provider.getBalance(campaignAddress)).to.equal(ONE);
+
+      await receiver.setRejectEther(false);
+      await expect(receiver.refund(campaignAddress))
+        .to.emit(campaign, "Refund").withArgs(receiverAddress, ONE);
+      expect(await campaign.pledgedAmount(receiverAddress)).to.equal(0n);
+      expect(await campaign.pledged()).to.equal(0n);
+      expect(await ethers.provider.getBalance(campaignAddress)).to.equal(0n);
+      expect(await ethers.provider.getBalance(receiverAddress)).to.equal(ONE);
+    });
+
+    it("TV3: unpledge lỗi rollback sổ sách/bộ đếm và có thể retry", async function () {
+      const { campaign } = await deployCampaign();
+      const receiver = await deployRejectingReceiver();
+      const receiverAddress = await receiver.getAddress();
+      const campaignAddress = await campaign.getAddress();
+      await receiver.pledge(campaignAddress, { value: ONE });
+      await expect(receiver.unpledge(campaignAddress, ONE))
+        .to.be.revertedWithCustomError(campaign, "TransferFailed");
+      expect(await campaign.pledged()).to.equal(ONE);
+      expect(await campaign.pledgedAmount(receiverAddress)).to.equal(ONE);
+      expect(await campaign.contributorCount()).to.equal(1n);
+      expect(await ethers.provider.getBalance(campaignAddress)).to.equal(ONE);
+      expect(await ethers.provider.getBalance(receiverAddress)).to.equal(0n);
+
+      await receiver.setRejectEther(false);
+      await receiver.unpledge(campaignAddress, ONE);
+      expect(await campaign.pledged()).to.equal(0n);
+      expect(await campaign.pledgedAmount(receiverAddress)).to.equal(0n);
+      expect(await campaign.contributorCount()).to.equal(0n);
+      expect(await ethers.provider.getBalance(campaignAddress)).to.equal(0n);
+      expect(await ethers.provider.getBalance(receiverAddress)).to.equal(ONE);
+    });
+
+    it("TV3: claim lỗi rollback claimed, giữ quỹ và có thể retry", async function () {
+      const [, alice] = await ethers.getSigners();
+      const receiver = await deployRejectingReceiver();
+      const receiverAddress = await receiver.getAddress();
+      const Campaign = await ethers.getContractFactory("Crowdfunding");
+      const campaign = await Campaign.deploy(receiverAddress, ONE, DAY);
+      await campaign.waitForDeployment();
+      const campaignAddress = await campaign.getAddress();
+      await campaign.connect(alice).pledge({ value: ONE });
+      await helpers.time.increaseTo(await campaign.endAt());
+
+      await expect(receiver.claim(campaignAddress))
+        .to.be.revertedWithCustomError(campaign, "TransferFailed");
+      expect(await campaign.claimed()).to.equal(false);
+      expect(await campaign.state()).to.equal(1n);
+      expect(await campaign.pledged()).to.equal(ONE);
+      expect(await campaign.pledgedAmount(alice.address)).to.equal(ONE);
+      expect(await ethers.provider.getBalance(campaignAddress)).to.equal(ONE);
+      expect(await ethers.provider.getBalance(receiverAddress)).to.equal(0n);
+
+      await receiver.setRejectEther(false);
+      await expect(receiver.claim(campaignAddress))
+        .to.emit(campaign, "Claim").withArgs(receiverAddress, ONE);
+      expect(await campaign.claimed()).to.equal(true);
+      expect(await campaign.state()).to.equal(3n);
+      expect(await campaign.pledged()).to.equal(ONE); // sổ sách không bị xóa khi claim
+      expect(await ethers.provider.getBalance(campaignAddress)).to.equal(0n);
+      expect(await ethers.provider.getBalance(receiverAddress)).to.equal(ONE);
+    });
+
+    it("TV3: sweep lỗi giữ phần dư và khoản góp; retry chỉ lấy phần dư", async function () {
+      const [, alice] = await ethers.getSigners();
+      const receiver = await deployRejectingReceiver();
+      const receiverAddress = await receiver.getAddress();
+      const Campaign = await ethers.getContractFactory("Crowdfunding");
+      const campaign = await Campaign.deploy(receiverAddress, 10n * ONE, DAY);
+      await campaign.waitForDeployment();
+      const campaignAddress = await campaign.getAddress();
+      const excess = ethers.parseEther("0.7");
+      await campaign.connect(alice).pledge({ value: ONE });
+      const ForceEther = await ethers.getContractFactory("ForceEther");
+      const force = await ForceEther.deploy(campaignAddress, { value: excess });
+      await force.waitForDeployment();
+
+      await expect(receiver.sweep(campaignAddress))
+        .to.be.revertedWithCustomError(campaign, "TransferFailed");
+      expect(await campaign.pledged()).to.equal(ONE);
+      expect(await campaign.pledgedAmount(alice.address)).to.equal(ONE);
+      expect(await ethers.provider.getBalance(campaignAddress)).to.equal(ONE + excess);
+      expect(await ethers.provider.getBalance(receiverAddress)).to.equal(0n);
+
+      await receiver.setRejectEther(false);
+      await expect(receiver.sweep(campaignAddress))
+        .to.emit(campaign, "Sweep").withArgs(receiverAddress, excess);
+      expect(await campaign.state()).to.equal(0n); // sweep không cần chờ hết hạn
+      expect(await campaign.pledged()).to.equal(ONE);
+      expect(await campaign.pledgedAmount(alice.address)).to.equal(ONE);
+      expect(await ethers.provider.getBalance(campaignAddress)).to.equal(ONE);
+      expect(await ethers.provider.getBalance(receiverAddress)).to.equal(excess);
+    });
+
     it("ReentrancyAttacker: guard chặn nested refund, refund hợp lệ vẫn hoàn tất", async function () {
       const { campaign } = await deployCampaign("10", DAY);
       const Attacker = await ethers.getContractFactory("ReentrancyAttacker");

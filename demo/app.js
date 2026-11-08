@@ -1,10 +1,9 @@
 /**
  * CrowdFund3 Protocol — bộ điều khiển mô phỏng
  *
- * Nguyên tắc: mô phỏng phải chạy ĐÚNG LUẬT của Crowdfunding.sol, không phải
- * một bản gần giống. Hai bất biến của hợp đồng được vẽ thẳng ra giao diện
- * dưới dạng phép so sánh sống, nên mọi lệch pha giữa mô phỏng và hợp đồng
- * đều hiện ra thành một dòng "lệch" trên màn hình.
+ * Mô phỏng JavaScript minh họa điều kiện của Crowdfunding.sol, không chạy EVM.
+ * Kiểm tra pledged == Σ pledgedAmount chỉ đối chiếu sổ sách trong mô phỏng;
+ * tính đúng của Solidity cần được kiểm tra riêng trên EVM.
  */
 
 const INITIAL_DURATION = 604800; // 7 ngày, tính bằng giây
@@ -102,6 +101,7 @@ function notify(kind, message, title) {
   el.querySelector('.toast-title').textContent = title || meta.title;
   el.querySelector('.toast-msg').textContent = message;
 
+  while (stack.children.length >= 2) stack.firstElementChild.remove();
   stack.appendChild(el);
 
   const dismiss = () => {
@@ -155,7 +155,7 @@ function applyTheme(theme) {
 window.addEventListener('DOMContentLoaded', () => {
   initTheme();
   resetCampaign();
-  addLog('Khởi tạo', 'Hợp đồng được triển khai',
+  addLog('Khởi tạo', 'Khởi tạo chiến dịch mô phỏng JavaScript',
     `Mục tiêu ${appState.goalEth.toFixed(2)} ETH · Thời hạn 7 ngày (604.800 giây)`, 'event-pledge');
   const pledgeInput = document.getElementById('pledgeInput');
   if (pledgeInput) {
@@ -191,6 +191,20 @@ function switchModeTab(mode) {
   if (web3View) web3View.style.display = toSandbox ? 'none' : 'block';
   if (tabSandbox) tabSandbox.classList.toggle('active', toSandbox);
   if (tabWeb3) tabWeb3.classList.toggle('active', !toSandbox);
+  tabSandbox.setAttribute('aria-pressed', String(toSandbox));
+  tabWeb3.setAttribute('aria-pressed', String(!toSandbox));
+  document.body.dataset.mode = toSandbox ? 'sandbox' : 'web3';
+  setText('networkLabel', toSandbox ? 'Mô phỏng'
+    : (WEB3.connected ? WEB3_CHAIN_NAMES[WEB3.chainId] || `Chain ${WEB3.chainId}` : 'Chưa kết nối ví'));
+}
+
+function toggleDemoControls() {
+  const controls = document.getElementById('demoControls');
+  const button = document.getElementById('btnToggleRemote');
+  controls.hidden = !controls.hidden;
+  button.setAttribute('aria-expanded', String(!controls.hidden));
+  button.textContent = controls.hidden ? 'Mở điều khiển' : 'Thu gọn';
+  button.closest('.demo-remote-bar').classList.toggle('is-collapsed', controls.hidden);
 }
 
 function switchRightTab(tabName) {
@@ -209,11 +223,14 @@ function setPledgeAmount(val) {
 }
 
 function setPledgeMax() {
-  const wallet = getActiveWallet();
+  const wallet = SIM_WALLETS[appState.activePersonaId];
   const needed = Math.max(0, appState.goalEth - appState.pledgedEth);
-  let maxVal = needed > 0 && wallet.balance >= needed ? needed : wallet.balance;
-  maxVal = Math.round(maxVal * 100) / 100;
-  if (maxVal <= 0) maxVal = 1.0;
+  let maxVal = needed > 0 ? Math.min(needed, wallet.balance) : wallet.balance;
+  maxVal = Math.floor(maxVal * 100) / 100;
+  if (maxVal <= 0) {
+    notify('error', 'Ví mô phỏng không còn số dư khả dụng.');
+    return;
+  }
   setPledgeAmount(maxVal);
   document.querySelectorAll('.btn-chip').forEach(chip => {
     chip.classList.toggle('active', chip.dataset.val === 'max');
@@ -236,7 +253,7 @@ function getCampaignState() {
 
 /** Số ngày đã trôi qua theo đồng hồ mô phỏng. */
 function daysPassed() {
-  return appState.simulatedTimeOffset / 86400;
+  return (getEffectiveTime() - appState.startAt) / 86400;
 }
 
 /** Tổng các khoản góp riêng lẻ — vế phải của bất biến `pledged == Σ pledgedAmount`. */
@@ -249,7 +266,8 @@ function sumContributions() {
 // ====================================================================
 
 function handleTimeSlider(val) {
-  appState.simulatedTimeOffset = Math.floor(parseFloat(val) * 86400);
+  const targetTime = appState.startAt + Math.floor(parseFloat(val) * 86400);
+  appState.simulatedTimeOffset = targetTime - Math.floor(Date.now() / 1000);
   render();
 }
 
@@ -257,8 +275,8 @@ function setTimeByDays(days) {
   const slider = document.getElementById('timeSlider');
   if (slider) slider.value = days;
   handleTimeSlider(days);
-  addLog('Tua thời gian', `Đưa đồng hồ chuỗi tới ngày ${days}`,
-    `Bù giờ EVM: +${appState.simulatedTimeOffset} giây`, 'event-time');
+  addLog('Tua thời gian', `Đưa đồng hồ mô phỏng tới ngày ${days}`,
+    'Chỉ đổi thời gian JavaScript; không thay đổi timestamp của blockchain.', 'event-time');
 }
 
 // ====================================================================
@@ -313,8 +331,11 @@ function handleUnpledge() {
   }
 
   const input = document.getElementById('pledgeInput');
-  let retract = parseFloat(input.value);
-  if (isNaN(retract) || retract <= 0 || retract > contrib) retract = contrib;
+  const retract = Number(input.value);
+  if (!Number.isFinite(retract) || retract <= 0 || retract > contrib) {
+    notify('error', `Nhập số ETH lớn hơn 0 và không vượt khoản đã góp (${contrib.toFixed(2)} ETH). unpledge(amount) sẽ hoàn tác với NothingToRefund().`);
+    return;
+  }
 
   // CEI: sổ sách ghi trước, chuyển tiền sau.
   appState.pledgedEth -= retract;
@@ -384,10 +405,10 @@ function handleRefund() {
 
 function stateLabel(state) {
   return {
-    Active: 'ĐANG MỞ',
-    Successful: 'THÀNH CÔNG (chờ rút)',
-    Failed: 'THẤT BẠI',
-    Claimed: 'ĐÃ GIẢI NGÂN'
+    Active: 'Đang gọi vốn',
+    Successful: 'Đạt mục tiêu (chờ giải ngân)',
+    Failed: 'Không đạt mục tiêu',
+    Claimed: 'Đã giải ngân'
   }[state] || state;
 }
 
@@ -396,6 +417,7 @@ function stateLabel(state) {
 // ====================================================================
 
 function resetCampaign() {
+  document.getElementById('toastStack').replaceChildren();
   appState.pledgedEth = 0.0;
   appState.startAt = Math.floor(Date.now() / 1000);
   appState.simulatedTimeOffset = 0;
@@ -427,18 +449,13 @@ function pledgeFor(wallet, amount) {
 function runSuccessScenario() {
   resetCampaign();
   pledgeFor(SIM_WALLETS.alice, 4.0);
-  pledgeFor(SIM_WALLETS.bob, 4.0);
+  pledgeFor(SIM_WALLETS.bob, 3.0);
   pledgeFor(SIM_WALLETS.charlie, 3.0);
-
-  const slider = document.getElementById('timeSlider');
-  if (slider) slider.value = 7.2;
-  handleTimeSlider(7.2);
-  addLog('Tua thời gian', 'Đồng hồ chuỗi vượt hạn chót ngày 7',
-    'Đủ 11.00 ETH, thành công, chuyển sang chờ chủ dự án rút', 'event-time');
-
-  selectPersona('creator');
+  setTimeByDays(6.9);
+  addLog('Kịch bản', 'Đủ 10 ETH nhưng chưa hết hạn: vẫn Active',
+    'Bấm 7.0d để tới đúng hạn; sau đó chọn ví Chủ dự án để giải ngân.', 'event-time');
   render();
-  notify('info', 'Kịch bản đạt mục tiêu: quỹ 11.00 ETH, đã qua hạn. Đã tự động kết nối ví Chủ dự án để rút vốn.');
+  notify('info', 'Đã đủ 10 ETH nhưng chưa hết hạn. Bấm 7.0d: ví Alice vẫn không được giải ngân; chọn Chủ dự án để kiểm tra quyền.');
 }
 
 function runOversubscribedScenario() {
@@ -455,7 +472,7 @@ function runOversubscribedScenario() {
 
   selectPersona('creator');
   render();
-  notify('success', 'Mô phỏng Góp vượt mục tiêu (12.00 ETH / 10.00 ETH). Chủ dự án sẽ rút toàn bộ 12.00 ETH mà không thất thoát quỹ.');
+  notify('ok', 'Mô phỏng vượt mục tiêu: 12.00 / 10.00 ETH. Đã chọn ví Chủ dự án; có thể giải ngân toàn bộ 12 ETH.');
 }
 
 function runFailScenario() {
@@ -483,13 +500,8 @@ function render() {
   const days = daysPassed();
   const pastDeadline = days >= DEADLINE_DAYS;
 
-  // ---- 1. Viên trạng thái & Huy hiệu vai trò ví
-  const roleBadge = document.getElementById('roleBadge');
-  if (roleBadge) {
-    const isCreator = wallet.id === 'creator';
-    roleBadge.className = `role-badge ${isCreator ? 'role-creator' : 'role-backer'}`;
-    roleBadge.textContent = isCreator ? 'Creator' : 'Backer';
-  }
+  // ---- 1. Trạng thái chiến dịch & trọng tâm thao tác
+  document.querySelector('.campaign-hero-card').dataset.state = state;
 
   const pill = document.getElementById('campaignStatusPill');
   const pillText = document.getElementById('campaignStatusText');
@@ -508,9 +520,13 @@ function render() {
   const isOversubscribed = appState.pledgedEth > appState.goalEth;
   setText('goalCurrent', `${appState.pledgedEth.toFixed(2)} ETH`);
   setText('goalTarget', `${appState.goalEth.toFixed(2)} ETH`);
-  const goalLabel = !goalMet
-    ? 'chưa thoả'
-    : (isOversubscribed ? `đã thoả (+${(appState.pledgedEth - appState.goalEth).toFixed(2)} ETH)` : 'đã thoả');
+  const progressPercent = (appState.pledgedEth / appState.goalEth) * 100;
+  const goalLabel = `${Number(progressPercent.toFixed(1))}% mục tiêu`;
+  const meter = document.querySelector('.hero-meter-track');
+  meter.setAttribute('aria-valuenow', Math.min(100, progressPercent));
+  meter.setAttribute('aria-valuetext', `${goalLabel}, ${appState.pledgedEth.toFixed(2)} trên ${appState.goalEth.toFixed(2)} ETH`);
+  const goalPreset = document.querySelector('.pledge-pod .btn-chip-max');
+  goalPreset.textContent = goalMet ? 'Tối đa ví' : 'Đủ mục tiêu';
   setInvariant('invGoal', 'condGoal', 'condGoalText', goalMet, goalLabel);
 
   const goalBadge = document.getElementById('condGoal');
@@ -529,7 +545,7 @@ function render() {
   setText('timeCurrent', `Ngày ${days.toFixed(1)}`);
   setText('timeTarget', `Ngày ${DEADLINE_DAYS.toFixed(1)}`);
   setInvariant('invTime', 'condTime', 'condTimeText', pastDeadline,
-    pastDeadline ? 'đã thoả' : 'chưa thoả');
+    pastDeadline ? 'Đã hết hạn' : `Còn ${(DEADLINE_DAYS - days).toFixed(1)} ngày`);
   setFill('boltTimeFill', Math.min(1, days / DISPLAY_WINDOW_DAYS));
   setExpr('exprTime',
     `block.timestamp >= endAt`,
@@ -546,7 +562,18 @@ function render() {
   setText('myCurrentPledge', `${mine.toFixed(2)} ETH`);
   setText('activeWalletBalance', `${wallet.balance.toFixed(2)} ETH`);
 
-  // ---- 5. Bất biến sống: pledged == Σ pledgedAmount
+  setText('guardGoal', `${goalMet ? '✓' : '·'} ${appState.pledgedEth.toFixed(2)} / ${appState.goalEth.toFixed(2)} ETH`);
+  setText('guardTime', pastDeadline ? '✓ Đã hết hạn' : '· Chưa hết hạn');
+  const claimAllowed = state === 'Successful' && wallet.id === 'creator';
+  setText('guardClaim', appState.claimed ? 'Đã giải ngân'
+    : !goalMet ? 'Chưa đủ vốn'
+    : !pastDeadline ? 'Chờ hết hạn'
+    : wallet.id !== 'creator' ? 'Chọn ví chủ dự án' : '✓ Được giải ngân');
+  document.getElementById('guardGoal').classList.toggle('is-met', goalMet);
+  document.getElementById('guardTime').classList.toggle('is-met', pastDeadline);
+  document.getElementById('guardClaim').classList.toggle('is-met', claimAllowed);
+
+  // ---- 5. Kiểm tra sổ sách mô phỏng: pledged == Σ pledgedAmount
   const total = sumContributions();
   const matches = Math.abs(total - appState.pledgedEth) < 1e-9;
   setText('pledgedTotal', appState.pledgedEth.toFixed(2));
@@ -561,6 +588,10 @@ function render() {
   setDisabled('btnUnpledge', state !== 'Active' || mine <= 0);
   setDisabled('btnClaim', !(state === 'Successful' && wallet.id === 'creator'));
   setDisabled('btnRefund', !(state === 'Failed' && mine > 0));
+  setText('btnClaim', state === 'Successful' && wallet.id === 'creator'
+    ? `Giải ngân ${appState.pledgedEth.toFixed(2)} ETH` : 'Giải ngân cho chủ dự án');
+  setText('btnRefund', state === 'Failed' && mine > 0
+    ? `Nhận lại ${mine.toFixed(2)} ETH` : 'Nhận lại tiền đã góp');
 
   // ---- 7. Gợi ý điều kiện: ngắn gọn, sắc nét 1 dòng
   const claimHint = document.getElementById('claimConditionHint');
@@ -570,7 +601,7 @@ function render() {
       claimHint.classList.add('hint-ready');
       claimHint.textContent = '✓ Đã giải ngân hoàn tất cho Chủ dự án.';
     } else if (wallet.id !== 'creator') {
-      claimHint.textContent = `Chỉ Chủ dự án rút vốn khi đủ điều kiện. (Bạn là: ${wallet.name})`;
+      claimHint.textContent = 'Chỉ ví chủ dự án được giải ngân.';
     } else if (state === 'Successful') {
       claimHint.classList.add('hint-ready');
       claimHint.textContent = `✓ Đủ điều kiện. Sẵn sàng rút ${appState.pledgedEth.toFixed(2)} ETH.`;
@@ -594,7 +625,7 @@ function render() {
       }
     } else if (!pastDeadline) {
       const remainingDays = (DEADLINE_DAYS - days).toFixed(1);
-      refundHint.textContent = `Chưa hết hạn (còn ${remainingDays}d) · Chỉ mở khi hết hạn mà thiếu vốn.`;
+      refundHint.textContent = `Còn ${remainingDays} ngày · Hoàn tiền nếu không đủ vốn.`;
     } else {
       refundHint.textContent = 'Chiến dịch thành công · Không mở hoàn tiền.';
     }
@@ -606,11 +637,11 @@ function render() {
     unpledgeHint.className = 'condition-hint';
     if (mine > 0 && !pastDeadline) {
       unpledgeHint.classList.add('hint-ready');
-      unpledgeHint.textContent = `✓ Sẵn sàng hủy góp và nhận lại ${mine.toFixed(2)} ETH.`;
+      unpledgeHint.textContent = `Đã góp ${mine.toFixed(2)} ETH · Theo số tiền đã nhập.`;
     } else if (pastDeadline) {
-      unpledgeHint.textContent = 'Đã hết hạn: Không thể hủy góp (dùng Hoàn tiền nếu thất bại).';
+      unpledgeHint.textContent = 'Chiến dịch đã hết hạn.';
     } else {
-      unpledgeHint.textContent = 'Khả dụng khi bạn đã góp (> 0 ETH) và chiến dịch còn hạn.';
+      unpledgeHint.textContent = 'Chưa có khoản góp nào.';
     }
   }
 
@@ -619,11 +650,11 @@ function render() {
     { id: 'timeJump0', day: 0 },
     { id: 'timeJump3', day: 3.5 },
     { id: 'timeJump6', day: 6.9 },
-    { id: 'timeJump7', day: 7.1 }
+    { id: 'timeJump7', day: 7 }
   ];
   jumps.forEach(j => {
     const el = document.getElementById(j.id);
-    if (el) el.classList.toggle('active', Math.abs(days - j.day) < 0.1);
+    if (el) el.classList.toggle('active', Math.abs(days - j.day) < 0.01);
   });
 
   // ---- 10. Bảng sổ cái
@@ -718,8 +749,8 @@ function renderBackersTable(backers) {
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" class="empty-icon" aria-hidden="true">
               <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
             </svg>
-            <div class="empty-title">Sổ cái on-chain chưa có bản ghi</div>
-            <div class="empty-desc">Chọn số ETH và bấm "Đóng góp ETH" ở bảng bên trái để ghi nhận giao dịch đầu tiên vào Smart Contract.</div>
+            <div class="empty-title">Chưa có người góp vốn</div>
+            <div class="empty-desc">Chọn số ETH trong mục Đóng góp vốn để bắt đầu mô phỏng.</div>
           </div>
         </td>
       </tr>`;
@@ -762,6 +793,16 @@ function addLog(event, title, detail, typeClass = 'event-pledge') {
 }
 
 function renderLogs() {
+  const recent = document.getElementById('recentActivityLog');
+  if (recent) {
+    recent.innerHTML = appState.eventLogs.length
+      ? appState.eventLogs.slice(0, 3).map(log => `
+        <div class="feed-item ${log.typeClass}">
+          <span class="feed-name">${log.event}</span>
+          <div class="feed-desc">${log.title}</div>
+        </div>`).join('')
+      : '<p class="feed-empty">Các thao tác mô phỏng sẽ xuất hiện tại đây.</p>';
+  }
   const container = document.getElementById('eventLogContainer');
   if (!container) return;
 
@@ -815,6 +856,9 @@ const WEB3 = {
   chainId: null,
   connected: false,
   balance: 0n,
+  contractAddress: null,
+  sessionVersion: 0,
+  txPending: false,
   _listenersAttached: false
 };
 
@@ -928,9 +972,24 @@ function web3DecodeError(err) {
   return err?.reason || err?.shortMessage || err?.message || 'Lỗi không xác định.';
 }
 
-function web3Log(html) {
+function escapeHtml(value) {
+  return String(value).replace(/[&<>"']/g, char => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[char]));
+}
+
+function web3Log(html, entry) {
   const box = document.getElementById('web3Log');
-  if (box) box.innerHTML = `<div class="feed-desc">${html}</div>`;
+  if (!box) return null;
+  box.querySelector('.web3-log-empty')?.remove();
+  if (!entry) {
+    entry = document.createElement('div');
+    entry.className = 'web3-log-entry';
+    box.prepend(entry);
+    while (box.children.length > 8) box.lastElementChild.remove();
+  }
+  entry.innerHTML = html;
+  return entry;
 }
 
 function web3StateLabel(id) {
@@ -945,17 +1004,54 @@ function web3SetButtonsDisabled(disabled) {
 function setTxLoading(btnId, isLoading, loadingText) {
   const btn = document.getElementById(btnId);
   if (!btn) return;
+  WEB3.txPending = isLoading;
+  setDisabled('btnConnectWallet', isLoading);
+  web3SetButtonsDisabled(true);
   if (isLoading) {
     btn.classList.add('is-loading');
     btn.dataset.origHtml = btn.innerHTML;
     btn.innerHTML = `<span>${loadingText || 'Đang xử lý…'}</span>`;
-    web3SetButtonsDisabled(true);
   } else {
     btn.classList.remove('is-loading');
-    if (btn.dataset.origHtml) {
-      btn.innerHTML = btn.dataset.origHtml;
+    if (btn.dataset.origHtml) btn.innerHTML = btn.dataset.origHtml;
+  }
+}
+
+async function handleWeb3AccountsChanged(accounts) {
+  const version = ++WEB3.sessionVersion;
+  WEB3.connected = false;
+  WEB3.address = null;
+  WEB3.signer = null;
+  WEB3.contract = null;
+  web3SetButtonsDisabled(true);
+  ['w3State', 'w3Pledged', 'w3TimeLeft', 'w3MyPledge'].forEach(id => setText(id, '—'));
+  setText('w3WalletBalance', 'Số dư ví: —');
+  if (!accounts?.length) {
+    setText('web3NetworkBadge', 'Chưa kết nối');
+    document.getElementById('web3NetworkBadge').removeAttribute('style');
+    if (document.body.dataset.mode === 'web3') setText('networkLabel', 'Chưa kết nối ví');
+    setText('web3Status', 'Ví MetaMask đã ngắt kết nối.');
+    setText('web3ActionHint', 'Kết nối lại MetaMask để tiếp tục. Giao dịch đã gửi vẫn có thể được xác nhận.');
+    return;
+  }
+  setText('web3Status', 'Đang cập nhật signer cho tài khoản mới…');
+  try {
+    const provider = new ethers.BrowserProvider(window.ethereum);
+    const signer = await provider.getSigner(accounts[0]);
+    const address = await signer.getAddress();
+    if (version !== WEB3.sessionVersion) return;
+    WEB3.provider = provider;
+    WEB3.signer = signer;
+    WEB3.address = address;
+    WEB3.contract = new ethers.Contract(WEB3.contractAddress, CROWDFUNDING_ABI, signer);
+    WEB3.connected = true;
+    notify('info', `Đã chuyển signer sang ví ${address.slice(0, 6)}…${address.slice(-4)}.`);
+    await refreshOnChainState();
+  } catch (err) {
+    if (version === WEB3.sessionVersion) {
+      setText('web3Status', `Không cập nhật được tài khoản: ${web3DecodeError(err)}`);
+      setText('web3ActionHint', 'Kết nối lại MetaMask trước khi gửi giao dịch.');
     }
-    web3SetButtonsDisabled(false);
   }
 }
 
@@ -976,15 +1072,21 @@ async function connectMetaMask() {
   }
 
   try {
+    if (WEB3.txPending) return;
+    ++WEB3.sessionVersion;
+    WEB3.connected = false;
+    web3SetButtonsDisabled(true);
+    setText('web3Status', 'Đang kết nối MetaMask…');
     WEB3.provider = new ethers.BrowserProvider(window.ethereum);
     await WEB3.provider.send('eth_requestAccounts', []);
     WEB3.signer = await WEB3.provider.getSigner();
     WEB3.address = await WEB3.signer.getAddress();
     const net = await WEB3.provider.getNetwork();
     WEB3.chainId = Number(net.chainId);
+    WEB3.contractAddress = address;
     WEB3.contract = new ethers.Contract(address, CROWDFUNDING_ABI, WEB3.signer);
 
-    // Xác nhận địa chỉ đích đúng là hợp đồng Crowdfunding, không phải ví thường.
+    // Kiểm tra địa chỉ đích trả được goal(); đây không phải xác minh bytecode.
     await WEB3.contract.goal();
 
     // Gợi ý chuyển Sepolia nếu đang ở mạng khác ngoài Sepolia hoặc Localhost
@@ -1005,41 +1107,37 @@ async function connectMetaMask() {
     // Đăng ký lắng nghe sự kiện đổi ví / đổi chain một lần duy nhất
     if (window.ethereum.on && !WEB3._listenersAttached) {
       WEB3._listenersAttached = true;
-      window.ethereum.on('accountsChanged', async (accounts) => {
-        if (!accounts || accounts.length === 0) {
-          WEB3.connected = false;
-          web3SetButtonsDisabled(true);
-          notify('info', 'Ví MetaMask đã ngắt kết nối.');
-          web3Log('Ví MetaMask đã ngắt kết nối.');
-        } else {
-          WEB3.address = accounts[0];
-          notify('info', `Đã chuyển sang ví: ${WEB3.address.slice(0, 6)}…${WEB3.address.slice(-4)}`);
-          await refreshOnChainState();
-        }
-      });
+      window.ethereum.on('accountsChanged', handleWeb3AccountsChanged);
       window.ethereum.on('chainChanged', () => {
         window.location.reload();
       });
     }
 
     WEB3.connected = true;
+    if (document.body.dataset.mode === 'web3') {
+      setText('networkLabel', WEB3_CHAIN_NAMES[WEB3.chainId] || `Chain ${WEB3.chainId}`);
+    }
     const badge = document.getElementById('web3NetworkBadge');
     if (badge) {
       badge.textContent = WEB3_CHAIN_NAMES[WEB3.chainId] ?? `Chain ${WEB3.chainId}`;
-      badge.style.color = 'var(--good)';
-      badge.style.borderColor = 'color-mix(in srgb, var(--good) 45%, transparent)';
+      badge.style.color = 'var(--color-success)';
+      badge.style.borderColor = 'color-mix(in srgb, var(--color-success) 45%, transparent)';
     }
-    web3SetButtonsDisabled(false);
-
     notify('ok', `Đã kết nối ${WEB3.address.slice(0, 6)}…${WEB3.address.slice(-4)} tới hợp đồng ${address.slice(0, 6)}…${address.slice(-4)}.`);
-    web3Log(`Đã kết nối ví <b>${WEB3.address.slice(0, 6)}…${WEB3.address.slice(-4)}</b> tới hợp đồng <b>${address.slice(0, 6)}…${address.slice(-4)}</b> trên mạng <b>${WEB3_CHAIN_NAMES[WEB3.chainId] || 'Chain ' + WEB3.chainId}</b>`);
     await refreshOnChainState();
   } catch (err) {
+    WEB3.connected = false;
+    web3SetButtonsDisabled(true);
+    setText('web3Status', `Kết nối thất bại: ${web3DecodeError(err)}`);
     notify('error', `Kết nối thất bại: ${web3DecodeError(err)}`);
   }
 }
 
 function web3RequireConnected() {
+  if (WEB3.txPending) {
+    notify('info', 'Đang có giao dịch chờ ký hoặc xác nhận. Vui lòng chờ hoàn tất.');
+    return false;
+  }
   if (!WEB3.connected) {
     notify('error', 'Dán địa chỉ hợp đồng rồi bấm Kết nối MetaMask trước đã.');
     return false;
@@ -1051,13 +1149,16 @@ async function refreshOnChainState() {
   if (!WEB3.connected) return;
   const refreshBtn = document.getElementById('btnW3Refresh');
   if (refreshBtn) refreshBtn.classList.add('is-loading');
+  const version = WEB3.sessionVersion;
+  const c = WEB3.contract;
+  const address = WEB3.address;
   try {
-    const c = WEB3.contract;
     const [pledged, goal, stateId, timeLeft, myPledge, count, creator, balance] = await Promise.all([
       c.pledged(), c.goal(), c.state(), c.timeLeft(),
-      c.pledgedAmount(WEB3.address), c.contributorCount(), c.creator(),
-      WEB3.provider.getBalance(WEB3.address)
+      c.pledgedAmount(address), c.contributorCount(), c.creator(),
+      WEB3.provider.getBalance(address)
     ]);
+    if (version !== WEB3.sessionVersion || c !== WEB3.contract) return;
     WEB3.balance = balance;
 
     setText('w3State', web3StateLabel(Number(stateId)));
@@ -1072,144 +1173,102 @@ async function refreshOnChainState() {
     // Phân quyền nút theo trạng thái on-chain và vai trò của ví đang nối.
     const isCreator = creator.toLowerCase() === WEB3.address.toLowerCase();
     const st = Number(stateId);
-    setDisabled('btnW3Pledge', st !== 0);
-    setDisabled('btnW3Unpledge', !(st === 0 && myPledge > 0n));
-    setDisabled('btnW3Claim', !(st === 1 && isCreator));
-    setDisabled('btnW3Refund', !(st === 2 && myPledge > 0n));
+    setDisabled('btnW3Pledge', WEB3.txPending || st !== 0);
+    setDisabled('btnW3Unpledge', WEB3.txPending || !(st === 0 && myPledge > 0n));
+    setDisabled('btnW3Claim', WEB3.txPending || !(st === 1 && isCreator));
+    setDisabled('btnW3Refund', WEB3.txPending || !(st === 2 && myPledge > 0n));
 
     // Cập nhật hint phân quyền
     const hintEl = document.getElementById('web3ActionHint');
     if (hintEl) {
       if (st === 0) {
-        hintEl.textContent = `Chiến dịch đang mở. Ví của bạn đã góp ${ethers.formatEther(myPledge)} ETH.${myPledge > 0n ? ' Bạn có thể đóng góp thêm hoặc Hủy góp (Unpledge).' : ' Bạn có thể nhập số ETH và bấm Đóng góp.'}`;
+        hintEl.textContent = `Chiến dịch đang mở. Ví của bạn đã góp ${ethers.formatEther(myPledge)} ETH.${myPledge > 0n ? ' Bạn có thể đóng góp thêm hoặc rút lại toàn bộ khoản góp.' : ' Bạn có thể nhập số ETH và bấm Đóng góp.'}`;
       } else if (st === 1) {
-        hintEl.textContent = isCreator ? 'Mục tiêu đã đạt. Bạn là chủ dự án: Bấm "Rút vốn" để giải ngân quỹ về ví.' : 'Chiến dịch thành công. Toàn bộ quỹ thuộc quyền giải ngân của chủ dự án.';
+        hintEl.textContent = isCreator ? 'Mục tiêu đã đạt. Bạn là chủ dự án: Bấm "Giải ngân" để chuyển quỹ về ví.' : 'Chiến dịch thành công. Toàn bộ quỹ thuộc quyền giải ngân của chủ dự án.';
       } else if (st === 2) {
-        hintEl.textContent = myPledge > 0n ? 'Chiến dịch hết hạn không đạt mục tiêu: Bấm "Hoàn tiền" để rút lại 100% ETH theo chuẩn Pull-over-Push.' : 'Chiến dịch không đạt mục tiêu. Ví này không có khoản đóng góp nào để hoàn lại.';
+        hintEl.textContent = myPledge > 0n ? 'Chiến dịch hết hạn không đạt mục tiêu: Bấm "Nhận hoàn tiền" để nhận lại khoản góp (chưa tính phí gas).' : 'Chiến dịch không đạt mục tiêu. Ví này không có khoản đóng góp nào để hoàn lại.';
       } else if (st === 3) {
         hintEl.textContent = 'Quỹ đã được chủ dự án rút thành công (Claimed).';
       }
     }
 
-    web3Log(`On-chain: <b>${web3StateLabel(st)}</b> · ${ethers.formatEther(pledged)}/${ethers.formatEther(goal)} ETH · ${count} người góp · Bạn đã góp <b>${ethers.formatEther(myPledge)} ETH</b>`);
+    const shortAddress = `${address.slice(0, 6)}…${address.slice(-4)}`;
+    setText('web3Status', `Ví ${shortAddress} · ${WEB3_CHAIN_NAMES[WEB3.chainId] || 'Chain ' + WEB3.chainId} · ${count} người góp. Số liệu từ lần đọc RPC gần nhất; bấm Làm mới để cập nhật.`);
   } catch (err) {
-    web3Log(`Không đọc được trạng thái on-chain: ${web3DecodeError(err)}`);
+    if (version === WEB3.sessionVersion && c === WEB3.contract) {
+      web3SetButtonsDisabled(true);
+      setText('web3Status', `Không đọc được trạng thái on-chain: ${web3DecodeError(err)}`);
+      setText('web3ActionHint', 'Chưa xác nhận được quyền thao tác. Bấm Làm mới hoặc kết nối lại ví.');
+    }
   } finally {
-    if (refreshBtn) refreshBtn.classList.remove('is-loading');
+    if (refreshBtn && version === WEB3.sessionVersion) {
+      refreshBtn.classList.remove('is-loading');
+      refreshBtn.disabled = !WEB3.connected || WEB3.txPending;
+    }
+  }
+}
+
+async function submitWeb3Transaction(btnId, label, send) {
+  if (!web3RequireConnected()) return;
+  const contract = WEB3.contract;
+  const address = WEB3.address;
+  const chainId = WEB3.chainId;
+  const target = WEB3.contractAddress;
+  const short = value => `${value.slice(0, 6)}…${value.slice(-4)}`;
+  const context = `<strong>${escapeHtml(label)}</strong><span class="tx-context">Ví ${escapeHtml(short(address))} · HĐ ${escapeHtml(short(target))} · ${escapeHtml(WEB3_CHAIN_NAMES[chainId] || 'Chain ' + chainId)}</span>`;
+  setTxLoading(btnId, true, 'Đang chờ ký…');
+  const entry = web3Log(`${context}<p>Đang chờ xác nhận trên MetaMask…</p>`);
+  let txLink = '';
+  try {
+    const tx = await send(contract, address);
+    txLink = formatTxLink(tx.hash, chainId);
+    web3Log(`${context}<p>Đã gửi · Đang chờ xác nhận khối. ${txLink}</p>`, entry);
+    document.getElementById(btnId).innerHTML = '<span>Đang chờ xác nhận…</span>';
+    const receipt = await tx.wait();
+    web3Log(`${context}<p>✓ Đã xác nhận · Block <b>#${receipt.blockNumber}</b> · ${txLink}</p>`, entry);
+    notify('ok', `${label}: đã xác nhận tại block #${receipt.blockNumber}.`);
+  } catch (err) {
+    const msg = web3DecodeError(err);
+    web3Log(`${context}<p>Không hoàn tất: ${escapeHtml(msg)} ${txLink}</p>`, entry);
+    notify('error', `${label}: ${msg}`);
+  } finally {
+    setTxLoading(btnId, false);
+    await refreshOnChainState();
   }
 }
 
 async function web3Pledge() {
   if (!web3RequireConnected()) return;
-  const valStr = document.getElementById('web3PledgeAmount')?.value || '0';
-  const amount = parseFloat(valStr);
-  if (isNaN(amount) || amount <= 0) {
-    notify('error', 'Nhập số ETH hợp lệ vào ô "Số ETH muốn đóng góp on-chain".');
-    return;
-  }
-  const wei = ethers.parseEther(String(amount));
-  if (WEB3.balance > 0n && wei > WEB3.balance) {
-    notify('error', `Số dư ví không đủ (${ethers.formatEther(WEB3.balance)} ETH < ${amount} ETH).`);
-    return;
-  }
-
-  setTxLoading('btnW3Pledge', true, 'Đang chờ ký…');
+  let wei;
   try {
-    web3Log('Đang chờ MetaMask ký giao dịch pledge…');
-    const tx = await WEB3.contract.pledge({ value: wei });
-    const txLink = formatTxLink(tx.hash, WEB3.chainId);
-    web3Log(`Đã phát giao dịch: ${txLink}. Đang chờ xác nhận khối…`);
-    const btn = document.getElementById('btnW3Pledge');
-    if (btn) btn.innerHTML = '<span>Đang đào khối…</span>';
-
-    const receipt = await tx.wait();
-    notify('ok', `Đã góp ${amount} ETH on-chain tại block #${receipt.blockNumber}.`);
-    web3Log(`✅ Pledge ${amount} ETH thành công tại block <b>#${receipt.blockNumber}</b>. Minh chứng: ${txLink}`);
+    const input = document.getElementById('web3PledgeAmount').value.trim();
+    wei = ethers.parseEther(input);
+    if (wei <= 0n) throw new Error('Số ETH phải lớn hơn 0.');
   } catch (err) {
-    const msg = web3DecodeError(err);
-    notify('error', `Pledge thất bại: ${msg}`);
-    web3Log(`❌ Pledge thất bại: ${msg}`);
-  } finally {
-    setTxLoading('btnW3Pledge', false);
-    await refreshOnChainState();
+    notify('error', 'Nhập số ETH lớn hơn 0, tối đa 18 chữ số thập phân.');
+    return;
   }
+  if (wei > WEB3.balance) {
+    notify('error', `Số dư ví không đủ (${ethers.formatEther(WEB3.balance)} ETH). Cần dự phòng thêm phí gas.`);
+    return;
+  }
+  await submitWeb3Transaction('btnW3Pledge', `Đóng góp ${ethers.formatEther(wei)} ETH`, c => c.pledge({ value: wei }));
 }
 
 async function web3Unpledge() {
-  if (!web3RequireConnected()) return;
-  setTxLoading('btnW3Unpledge', true, 'Đang chờ ký…');
-  try {
-    const mine = await WEB3.contract.pledgedAmount(WEB3.address);
-    if (mine === 0n) {
-      notify('error', 'Bạn chưa đóng góp khoản nào để hủy góp.');
-      return;
-    }
-    web3Log('Đang chờ MetaMask ký giao dịch unpledge (hủy toàn bộ cọc)…');
-    const tx = await WEB3.contract.unpledge(mine);
-    const txLink = formatTxLink(tx.hash, WEB3.chainId);
-    web3Log(`Đã phát giao dịch: ${txLink}. Đang chờ xác nhận khối…`);
-    const btn = document.getElementById('btnW3Unpledge');
-    if (btn) btn.innerHTML = '<span>Đang đào khối…</span>';
-
-    const receipt = await tx.wait();
-    notify('ok', `Đã hủy góp ${ethers.formatEther(mine)} ETH về ví tại block #${receipt.blockNumber}.`);
-    web3Log(`✅ Hủy góp ${ethers.formatEther(mine)} ETH thành công tại block <b>#${receipt.blockNumber}</b>. Minh chứng: ${txLink}`);
-  } catch (err) {
-    const msg = web3DecodeError(err);
-    notify('error', `Hủy góp thất bại: ${msg}`);
-    web3Log(`❌ Hủy góp thất bại: ${msg}`);
-  } finally {
-    setTxLoading('btnW3Unpledge', false);
-    await refreshOnChainState();
-  }
+  await submitWeb3Transaction('btnW3Unpledge', 'Rút lại toàn bộ khoản góp', async (c, address) => {
+    const mine = await c.pledgedAmount(address);
+    if (mine === 0n) throw new Error('Ví này không có khoản góp nào để rút lại.');
+    return c.unpledge(mine);
+  });
 }
 
 async function web3Claim() {
-  if (!web3RequireConnected()) return;
-  setTxLoading('btnW3Claim', true, 'Đang chờ ký…');
-  try {
-    web3Log('Đang chờ MetaMask ký giao dịch claim (rút vốn chủ dự án)…');
-    const tx = await WEB3.contract.claim();
-    const txLink = formatTxLink(tx.hash, WEB3.chainId);
-    web3Log(`Đã phát giao dịch: ${txLink}. Đang chờ xác nhận khối…`);
-    const btn = document.getElementById('btnW3Claim');
-    if (btn) btn.innerHTML = '<span>Đang đào khối…</span>';
-
-    const receipt = await tx.wait();
-    notify('ok', `Đã giải ngân toàn bộ quỹ về ví tại block #${receipt.blockNumber}.`);
-    web3Log(`✅ Giải ngân thành công tại block <b>#${receipt.blockNumber}</b>. Minh chứng: ${txLink}`);
-  } catch (err) {
-    const msg = web3DecodeError(err);
-    notify('error', `Rút vốn thất bại: ${msg}`);
-    web3Log(`❌ Rút vốn thất bại: ${msg}`);
-  } finally {
-    setTxLoading('btnW3Claim', false);
-    await refreshOnChainState();
-  }
+  await submitWeb3Transaction('btnW3Claim', 'Giải ngân', c => c.claim());
 }
 
 async function web3Refund() {
-  if (!web3RequireConnected()) return;
-  setTxLoading('btnW3Refund', true, 'Đang chờ ký…');
-  try {
-    web3Log('Đang chờ MetaMask ký giao dịch refund (Pull-over-Push)…');
-    const tx = await WEB3.contract.refund();
-    const txLink = formatTxLink(tx.hash, WEB3.chainId);
-    web3Log(`Đã phát giao dịch: ${txLink}. Đang chờ xác nhận khối…`);
-    const btn = document.getElementById('btnW3Refund');
-    if (btn) btn.innerHTML = '<span>Đang đào khối…</span>';
-
-    const receipt = await tx.wait();
-    notify('ok', `Đã hoàn tiền về ví tại block #${receipt.blockNumber}.`);
-    web3Log(`✅ Hoàn tiền thành công tại block <b>#${receipt.blockNumber}</b>. Minh chứng: ${txLink}`);
-  } catch (err) {
-    const msg = web3DecodeError(err);
-    notify('error', `Hoàn tiền thất bại: ${msg}`);
-    web3Log(`❌ Hoàn tiền thất bại: ${msg}`);
-  } finally {
-    setTxLoading('btnW3Refund', false);
-    await refreshOnChainState();
-  }
+  await submitWeb3Transaction('btnW3Refund', 'Nhận hoàn tiền', c => c.refund());
 }
 
 // Gán toàn cục cho HTML handlers

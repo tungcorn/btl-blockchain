@@ -182,8 +182,8 @@ contract Crowdfunding {
     /**
      * @notice Allows the creator to withdraw funds if the goal was reached and deadline passed
      * @dev Sends address(this).balance (not just `pledged`) so accidentally or
-     *      forcibly transferred ETH (e.g. selfdestruct on pre-Cancun chains) is
-     *      never bricked in a SUCCESSFUL campaign. Note the emitted totalAmount
+     *      forcibly transferred ETH (including SELFDESTRUCT after EIP-6780) is
+     *      included in this successful claim. Note the emitted totalAmount
      *      may exceed `pledged` when forced ETH is present — indexers beware.
      *      In a FAILED campaign the excess cannot go through here; the creator
      *      must use sweepExcessEther().
@@ -227,9 +227,9 @@ contract Crowdfunding {
 
     /**
      * @notice Withdraws only the ETH balance that exceeds the accounted `pledged` total
-     * @dev Neutralizes the "forced ETH" vector (selfdestruct on pre-Cancun chains,
-     *      same-tx contract creation+destruct after EIP-6780): excess ETH sent to
-     *      a FAILED campaign would otherwise be bricked forever, because refund()
+     * @dev SELFDESTRUCT can force ETH here before or after EIP-6780; that EIP
+     *      restricts code/storage deletion, not balance transfer. Excess ETH in
+     *      a FAILED campaign is not paid out by refund(), because refund()
      *      pays strictly per pledgedAmount. Never touches backer funds: it reverts
      *      unless balance > pledged, so refunds always stay solvent.
      * @return swept The exact amount of excess wei transferred to the creator

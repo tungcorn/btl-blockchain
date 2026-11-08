@@ -3,25 +3,97 @@
 **Phân loại:** Nhóm C – Nâng cao (Điểm tối đa: 10.0) • **Đề:** W
 
 > 📖 **QUYỂN BÁO CÁO MÔN HỌC CHI TIẾT THEO ĐỀ CƯƠNG 4 PHẦN:**
-> * [**Trang bìa & Mục lục**](file:///d:/Hoc/BlockChain/lab02-crowdfunding-smart-contract/docs/report/00_trang_bia_va_muc_luc.md)
-> * [**Phần 1: Đặt vấn đề**](file:///d:/Hoc/BlockChain/lab02-crowdfunding-smart-contract/docs/report/01_dat_van_de.md)
-> * [**Phần 2: Cơ sở lý thuyết & Công nghệ**](file:///d:/Hoc/BlockChain/lab02-crowdfunding-smart-contract/docs/report/02_co_so_ly_thuyet.md)
-> * [**Phần 3: Phân tích, Thiết kế & Triển khai thực nghiệm**](file:///d:/Hoc/BlockChain/lab02-crowdfunding-smart-contract/docs/report/03_trien_khai_va_thuc_nghiem.md)
-> * [**Phần 4: Kết luận & Hướng phát triển**](file:///d:/Hoc/BlockChain/lab02-crowdfunding-smart-contract/docs/report/04_ket_luan_va_huong_phat_trien.md)
+> * [**Trang bìa & Mục lục**](report/00_trang_bia_va_muc_luc.md)
+> * [**Phần 1: Đặt vấn đề**](report/01_dat_van_de.md)
+> * [**Phần 2: Cơ sở lý thuyết & Công nghệ**](report/02_co_so_ly_thuyet.md)
+> * [**Phần 3: Phân tích, Thiết kế & Triển khai thực nghiệm**](report/03_trien_khai_va_thuc_nghiem.md)
+> * [**Phần 4: Kết luận & Hướng phát triển**](report/04_ket_luan_va_huong_phat_trien.md)
 
 ---
 
 ## 1. THÔNG TIN DỰ ÁN & PHÂN CHIA CÔNG VIỆC NHÓM (3 THÀNH VIÊN)
 
-### 1.1. Bảng phân công nhiệm vụ chi tiết
+### 1.1. Nguyên tắc phân công và ba luồng Blockchain
 
-Dự án được phân định ranh giới kỹ thuật rõ ràng để cả 3 thành viên đều có đóng góp độc lập, định lượng khi chấm điểm và vấn đáp:
+Nhóm chia theo **góp vốn — giải ngân — hoàn tiền & an toàn quỹ**. Mỗi thành viên chịu trách nhiệm xuyên suốt một luồng: lý thuyết Blockchain, đọc/giải thích và chỉnh sửa Solidity khi cần, kiểm thử, viết báo cáo, demo và vấn đáp. Không có thành viên chỉ làm giao diện, slide hoặc chỉ chạy test cho người khác.
 
-| STT | Thành viên & Vai trò | Nhiệm vụ chính phụ trách | Sản phẩm đầu ra cụ thể | Tỷ lệ đóng góp |
-| :---: | :--- | :--- | :--- | :---: |
-| **1** | **Thành viên 1**<br>*(Smart Contract Lead)* | - Thiết kế kiến trúc Smart Contract theo chuẩn Solidity `^0.8.20`.<br>- Xây dựng State Machine (`Active`, `Successful`, `Failed`, `Claimed`).<br>- Tối ưu hóa Gas với Custom Errors & `immutable`.<br>- Viết hợp đồng bệ phóng `CrowdfundingFactory.sol`.<br>- Đồng biên soạn **Phần 2** (Lý thuyết) & **Phần 3.2** (Thiết kế contract). | - [`contracts/Crowdfunding.sol`](file:///d:/Hoc/BlockChain/lab02-crowdfunding-smart-contract/contracts/Crowdfunding.sol)<br>- [`contracts/CrowdfundingFactory.sol`](file:///d:/Hoc/BlockChain/lab02-crowdfunding-smart-contract/contracts/CrowdfundingFactory.sol)<br>- [`docs/report/02_co_so_ly_thuyet.md`](file:///d:/Hoc/BlockChain/lab02-crowdfunding-smart-contract/docs/report/02_co_so_ly_thuyet.md) | **34%** |
-| **2** | **Thành viên 2**<br>*(Security & Testing Lead)* | - Thiết lập mô hình an ninh (Threat Modeling): Reentrancy, DoS, Timestamp.<br>- Triển khai mô hình Checks-Effects-Interactions (CEI) & Pull Refund.<br>- Xây dựng bộ kiểm thử hai tầng 52 test cases (18 Mock spec-based + 34 Hardhat EVM) bao phủ 100% nhánh rủi ro + Invariant Fuzz.<br>- Chạy phân tích tĩnh **Slither** và biên soạn báo cáo triage.<br>- Viết kịch bản mô phỏng dòng lệnh CLI Simulator.<br>- Đồng biên soạn **Phần 1** (Đặt vấn đề) & **Phần 3.3** (Kiểm thử). | - [`test/Crowdfunding.test.js`](file:///d:/Hoc/BlockChain/lab02-crowdfunding-smart-contract/test/Crowdfunding.test.js)<br>- [`scripts/simulate.js`](file:///d:/Hoc/BlockChain/lab02-crowdfunding-smart-contract/scripts/simulate.js)<br>- [`docs/report/01_dat_van_de.md`](file:///d:/Hoc/BlockChain/lab02-crowdfunding-smart-contract/docs/report/01_dat_van_de.md) | **33%** |
-| **3** | **Thành viên 3**<br>*(Frontend, Web3 & QA Lead)* | - Phát triển giao diện Web DApp với Hệ thống 2 Trục tiến độ (Tiền & Thời gian).<br>- Tích hợp bộ giả lập ví (Creator, Alice, Bob, Charlie) & Time Machine Slider.<br>- Tích hợp Ethers.js kết nối MetaMask trên Sepolia Testnet.<br>- Soạn thảo cẩm nang 10 câu hỏi vấn đáp phản biện bảo vệ điểm 10.<br>- Đồng biên soạn **Phần 3.4** (Thực nghiệm DApp) & **Phần 4** (Kết luận). | - [`demo/index.html`](file:///d:/Hoc/BlockChain/lab02-crowdfunding-smart-contract/demo/index.html)<br>- [`demo/style.css`](file:///d:/Hoc/BlockChain/lab02-crowdfunding-smart-contract/demo/style.css)<br>- [`demo/app.js`](file:///d:/Hoc/BlockChain/lab02-crowdfunding-smart-contract/demo/app.js)<br>- [`docs/report/04_ket_luan_va_huong_phat_trien.md`](file:///d:/Hoc/BlockChain/lab02-crowdfunding-smart-contract/docs/report/04_ket_luan_va_huong_phat_trien.md) | **33%** |
+> Đây là **phân công trách nhiệm từ thời điểm thống nhất**, không phải xác nhận ai đã viết mã nguồn có sẵn. Nhóm điền tên/MSSV tại [trang bìa](report/00_trang_bia_va_muc_luc.md), ghi nhận công việc thực tế bằng commit, test và nội dung báo cáo đã hoàn thành. Không tự gán tỷ lệ đóng góp khi chưa có đối chiếu của cả nhóm.
+
+| Thành viên | Chủ đề Blockchain chính | Phạm vi Solidity phụ trách | Kiểm thử và minh chứng phải giải thích |
+| :--- | :--- | :--- | :--- |
+| **Thành viên 1 — Góp vốn & rút trước hạn** | ETH/wei, `payable`, `msg.sender`, `msg.value`, mapping lưu đóng góp, storage và event; cập nhật sổ sách khi góp/rút. | `pledge()`, `receive()`, `unpledge(uint256)`; `pledged`, `pledgedAmount`, `contributorCount`; event `Pledge`/`Unpledge`. | Nhiều ví góp, góp 0, chuyển ETH trực tiếp, rút một phần/toàn bộ, rút quá khoản góp, chặn góp/rút tại và sau hạn. Giải thích số dư cá nhân và tổng ghi nhận trước/sau giao dịch. |
+| **Thành viên 2 — Vòng đời & giải ngân** | Máy trạng thái, `block.timestamp`, mục tiêu và deadline, quyền creator, `immutable`, custom error; triển khai nhiều chiến dịch bằng factory. | `constructor`, `state()`, `timeLeft()`, `progressBasisPoints()`, `onlyCreator`, `claim()`, cờ `claimed`; [CrowdfundingFactory.sol](../contracts/CrowdfundingFactory.sol). | Validation khởi tạo; đủ vốn nhưng chưa hết hạn; đúng giây `endAt`; đúng/sai người gọi; claim hai lần; vượt mục tiêu; tạo chiến dịch, phân trang và tính độc lập qua factory. |
+| **Thành viên 3 — Hoàn tiền & an toàn quỹ** | Pull-over-Push, CEI, reentrancy, revert khi chuyển ETH lỗi, forced ETH; phân biệt sổ sách và số dư thật; giới hạn của test/phân tích tĩnh. | `refund()`, `sweepExcessEther()`, modifier `nonReentrant` tự cài đặt; rà soát CEI tại các hàm chuyển ETH cùng TV1/TV2; [hợp đồng kiểm thử an toàn](../contracts/testing/Attackers.sol). | Thất bại sau hạn; hoàn đúng khoản góp, không hoàn hai lần; chặn refund khi thành công; nested refund, forced ETH, sweep chỉ phần dư; kiểm tra bất biến và giải thích phạm vi fuzz. |
+
+**Mã nguồn và bộ test dùng chung:** [Crowdfunding.sol](../contracts/Crowdfunding.sol), [test EVM trên Hardhat](../test/Crowdfunding.evm.test.js) và [test mô hình JavaScript](../test/Crowdfunding.test.js). Mỗi người phụ trách các ca thuộc luồng của mình trong cả hai tầng khi có tương ứng; không coi mô hình JavaScript là thực thi Solidity. Các mục kiểm thử trên là phạm vi cần kiểm tra/chuẩn bị, không khẳng định mọi trường hợp đã có test riêng. Nếu thiếu, người phụ trách bổ sung hoặc ghi rõ khoảng trống.
+
+### 1.2. Phân chia nội dung báo cáo
+
+Giữ bố cục báo cáo 4 phần hiện có; chia nội dung **bên trong từng phần** theo luồng, không giao toàn bộ lý thuyết cho một người và toàn bộ thực nghiệm cho người khác.
+
+| Thành viên | Nội dung biên soạn chính |
+| :--- | :--- |
+| **TV1** | [Phần 1](report/01_dat_van_de.md): bối cảnh, bài toán và yêu cầu góp/rút. [Phần 2](report/02_co_so_ly_thuyet.md): mục 2.1 về account/storage/gas và bổ sung giải thích `payable`, wei, mapping. [Phần 3](report/03_trien_khai_va_thuc_nghiem.md): mục 3.2.2 phần `pledge`/`receive`/`unpledge`; các test góp/rút ở 3.3 và demo tương ứng ở 3.4. |
+| **TV2** | Phần 2: mục 2.2 về timestamp, `immutable`, custom error. Phần 3: mục 3.1 về trạng thái/phân quyền; mục 3.2.2 phần constructor/claim và các hàm đọc trạng thái; mục 3.2.3 factory; test vòng đời/factory ở 3.3, demo giải ngân ở 3.4. Rà lại mục tiêu/phạm vi 1.4 cùng TV1. |
+| **TV3** | Phần 2: mục 2.3 về CEI/Pull-over-Push/reentrancy. Phần 3: mục 3.2.2 phần refund/sweep và guard; test an toàn/fuzz ở 3.3, phân tích kết quả Slither ở 3.3.1, demo thất bại/hoàn tiền ở 3.4. Chủ trì tổng hợp [Phần 4](report/04_ket_luan_va_huong_phat_trien.md), hai thành viên còn lại cung cấp kết quả và hạn chế của luồng mình. |
+
+**Nội dung chung:** cả ba cùng viết/rà mục 2.4 (tương tác Web3) và 3.4 (thực nghiệm). TV1 giải thích gửi giá trị ETH/wei; TV2 giải thích signer, chain/contract và quyền creator; TV3 giải thích receipt, giao dịch lỗi và kiểm tra trạng thái sau giao dịch. Mỗi người bổ sung hình/bảng hoặc log test của chính luồng mình; một người chỉ tổng hợp định dạng cuối cùng, không nhận thay phần chuyên môn của người khác.
+
+### 1.3. Kịch bản trình bày và vấn đáp theo người
+
+Gợi ý **3–4 phút/người**, điều chỉnh theo thời lượng giảng viên cho phép; đây là thời lượng chuẩn bị, không phải tỷ lệ đóng góp. Mỗi người phải chỉ được điều kiện trong code, thay đổi storage và kết quả kiểm thử, không chỉ bấm nút giao diện.
+
+#### Thành viên 1: Tiền đi vào và quyền rút trước hạn
+
+- **Trình tự demo:** reset mô phỏng → chọn Alice góp 3 ETH → rút 1 ETH → chỉ ra khoản góp còn 2 ETH và tổng ghi nhận giảm tương ứng → thử rút vượt khoản góp. Giải thích nhánh rút toàn bộ và cập nhật `contributorCount` bằng code/test. Sandbox không dùng gas thật; giao dịch EVM có phí gas riêng.
+- **Luận điểm cần nói:** `msg.value` dùng đơn vị wei; mapping gắn khoản góp với địa chỉ; `receive()` chỉ xử lý chuyển ETH thông thường với calldata rỗng, không ngăn được mọi cách ép ETH vào hợp đồng; event là log, không thay thế storage.
+- **Câu hỏi tự luyện:** Vì sao `pledge()` là `payable`? Ai được rút khoản góp của Alice? Rút một phần khác rút toàn bộ thế nào? Đã đủ vốn nhưng chưa hết hạn thì còn góp/rút được không? Vì sao nút bị vô hiệu hóa trên web không thay thế kiểm tra trong contract?
+
+#### Thành viên 2: Khi nào và ai được giải ngân?
+
+- **Trình tự demo:** chọn kịch bản đủ 10/10 ETH ở ngày 6.9 → chọn creator, chỉ ra chưa được claim → chuyển đúng ngày 7.0 → chọn ví không phải creator, chỉ ra sai quyền → chọn creator và claim → đối chiếu `Claimed`, số dư quỹ về 0 nhưng `pledged`/mapping không bị xóa. Việc nút bị khóa là minh họa UI; dùng test EVM để chứng minh contract từ chối lời gọi không hợp lệ.
+- **Luận điểm cần nói:** trước hạn vẫn `Active` dù đủ vốn; tại `block.timestamp == endAt`, góp/rút trước hạn bị chặn và nhánh quyết toán mở; hết hạn không tự gửi ETH, cần giao dịch `claim()`/`refund()`; `claim()` lấy số dư thực tế, không chỉ `goal`. Factory truyền địa chỉ người gọi làm creator của chiến dịch mới, tránh nhầm creator thành địa chỉ factory.
+- **Câu hỏi tự luyện:** Vì sao đủ vốn chưa đủ để claim? `state()` có phải biến storage được tự cập nhật không? Ai trả gas cho claim? Vì sao cần `claimed`? Nếu góp vượt goal thì tiền dư đi đâu? Các chiến dịch của factory chia sẻ tiền hay độc lập?
+
+#### Thành viên 3: Thất bại thì tiền được bảo vệ thế nào?
+
+- **Trình tự demo:** chọn kịch bản thất bại sau hạn → chọn backer có góp → refund → chỉ ra khoản góp cá nhân về 0, tổng ghi nhận giảm và không thể hoàn lần hai. Chuyển sang test EVM/hợp đồng kiểm thử để giải thích nested refund và forced ETH; không dùng animation sandbox làm bằng chứng chống tấn công.
+- **Luận điểm cần nói:** người góp tự gọi refund, không duyệt danh sách để đẩy tiền; CEI cập nhật sổ sách trước external call, guard tự cài đặt chặn tái nhập các hàm có bảo vệ; nếu chuyển ETH lỗi và revert thì thay đổi trong giao dịch cũng rollback. `pledged == Σ pledgedAmount` là bất biến sổ sách, không có nghĩa luôn bằng `address(this).balance`. Sau claim có thể `balance = 0` mà `pledged > 0`; forced ETH có thể khiến `balance > pledged`.
+- **Câu hỏi tự luyện:** Tại sao không hoàn tiền bằng vòng lặp? CEI và `nonReentrant` khác nhau thế nào? `call` thất bại thì khoản ghi nhận có mất không? Sweep có lấy tiền thuộc khoản góp không? Sweep có bắt buộc hết hạn không? Test/fuzz/Slither chứng minh được và chưa chứng minh được điều gì?
+- **Điểm phải nói đúng:** `sweepExcessEther()` chỉ cho creator rút `balance - pledged` khi dương, không yêu cầu hết hạn. Fuzz hiện tại kiểm tra các thao tác trong phạm vi kịch bản của test, không phải chứng minh hình thức cho mọi trạng thái. Passing tests hay chạy Slither không đồng nghĩa đã audit hoặc an toàn tuyệt đối.
+
+### 1.4. Nội dung bắt buộc và phần hỏi sâu
+
+Mỗi người chuẩn bị 3–4 phút cho phần cốt lõi; phần nâng cao dùng khi còn thời gian hoặc giảng viên hỏi. Không cố trình bày toàn bộ phạm vi phụ trách trong một lượt demo ngắn.
+
+| Thành viên | Bắt buộc trình bày | Dự phòng khi hỏi sâu |
+| :--- | :--- | :--- |
+| TV1 | Góp/rút, ETH/wei, mapping và thay đổi sổ sách | receive, event, rút hết/góp lại và contributorCount |
+| TV2 | Mục tiêu + deadline + quyền creator + claim | Factory, phân trang, immutable và custom errors |
+| TV3 | Refund, CEI, guard, rollback và cô lập lỗi giữa backer | Forced ETH, sweep, fuzz và Slither |
+
+**Minh chứng cho mỗi người:** một bảng trước/sau và ba test EVM tiêu biểu. [Mục 3.3 của báo cáo](report/03_trien_khai_va_thuc_nghiem.md) có bảng đối chiếu và lệnh lọc test theo người. Đây là tiêu chí chuẩn bị, không tự xác nhận thành viên đã hoàn thành.
+
+### 1.5. Kiến thức chung và điều kiện sẵn sàng bảo vệ
+
+Cả ba phải giải thích được:
+
+1. EOA/signer, địa chỉ contract, chain ID, ABI và RPC; đọc bằng `eth_call` khác giao dịch thay đổi state; ký giao dịch không có nghĩa đã được xác nhận.
+2. Phí gas do người gửi giao dịch chi trả; giao dịch được đưa vào block rồi revert vẫn có thể tốn gas; cần xem receipt, trạng thái và event để đối chiếu.
+3. Ba tầng minh chứng: **sandbox JavaScript** minh họa → **Hardhat EVM** chạy Solidity cục bộ → **giao dịch trên mạng đang kết nối** có hash/receipt. Không gọi sandbox là EVM hoặc coi chuyển slider là thay đổi timestamp của Sepolia.
+4. Ranh giới nghiệp vụ: `unpledge` trước hạn; `claim` sau hạn khi đủ mục tiêu và đúng creator; `refund` sau hạn khi không đủ mục tiêu. Cả ba đọc toàn bộ contract để trả lời câu hỏi nối giữa các luồng.
+
+**Công việc hỗ trợ dùng chung:** TV1 kiểm tra nhập số tiền và hiển thị ledger; TV2 kiểm tra điều kiện mục tiêu/thời hạn/phân quyền và kết nối đúng campaign; TV3 kiểm tra thông báo lỗi, receipt và luồng refund. UI/CSS, slide, CLI simulator và định dạng báo cáo được phối hợp theo năng lực, không thay thế phần Blockchain chính của bất kỳ ai. Khi sửa cùng file contract/test, nhóm thống nhất lượt hoặc tách commit nhỏ, tránh ba người sửa chồng cùng đoạn.
+
+**Mỗi người chuẩn bị đủ 5 minh chứng:**
+
+- [ ] Chỉ và giải thích được các hàm Solidity thuộc luồng mình, gồm điều kiện lỗi và thay đổi state.
+- [ ] Chạy/giải thích được test thành công, test bị từ chối và ít nhất một biên quan trọng của luồng; ghi lại lệnh/kết quả thực tế, thiếu test thì bổ sung hoặc ghi rõ.
+- [ ] Hoàn thiện nội dung báo cáo được phân công, có dẫn chứng code/test; rà chéo với một thành viên khác.
+- [ ] Tự trình bày và thao tác được demo; phân biệt rõ minh họa UI với bằng chứng EVM/on-chain.
+- [ ] Trả lời được các câu hỏi tự luyện và kiến thức chung; ghi nhận trung thực phần đã làm, phần cùng làm và phần còn thiếu.
+
+Bảng này phân định trách nhiệm chuẩn bị và nghiệm thu; các ô chưa được nhóm xác nhận không được coi là đã hoàn thành.
 
 ---
 
@@ -87,50 +159,39 @@ sequenceDiagram
 
     alt Trường hợp A: Đạt mục tiêu (pledged >= goal)
         Creator->>Contract: claim()
-        Contract->>Contract: CEI: claimed = true; balance = 0
-        Contract->>Creator: Transfer toàn bộ ETH
-        Contract-->>Creator: emit Claim(creator, totalAmount)
+        Contract->>Contract: CEI: claimed = true; đọc balanceToClaim
+        Contract-->>Creator: emit Claim(creator, balanceToClaim)
+        Contract->>Creator: call chuyển balanceToClaim; revert nếu lỗi
         Backer-xContract: refund() -> Reverted: GoalAlreadyReached()
     else Trường hợp B: Không đạt mục tiêu (pledged < goal)
         Creator-xContract: claim() -> Reverted: GoalNotReached()
         Backer->>Contract: refund() [Pull Pattern]
-        Contract->>Contract: CEI: pledgedAmount[Backer] = 0
-        Contract->>Backer: Transfer số ETH đã đóng góp
+        Contract->>Contract: CEI: pledgedAmount[Backer] = 0; pledged -= amount
         Contract-->>Backer: emit Refund(Backer, amount)
+        Contract->>Backer: call chuyển amount; revert nếu lỗi
     end
 ```
 
 ---
 
-## 3. PHÂN TÍCH AN NINH CHUYÊN SÂU & THREAT MODELING
+## 3. PHÂN TÍCH AN NINH VÀ PHẠM VI KIỂM CHỨNG
 
-Để đạt điểm 10 tuyệt đối (Nhóm C), hợp đồng được lập trình để khắc phục triệt để các lỗ hổng smart contract kinh điển:
+Các cơ chế dưới đây giảm những rủi ro cụ thể, không chứng minh an toàn tuyệt đối. Phân biệt giải thích thiết kế với hành vi đã được test trên EVM.
 
-### 3.1. Chống Tấn công Tái nhập (Reentrancy Attack)
-* **Nguy cơ**: Hacker sử dụng Smart Contract độc hại với hàm `receive()` hoặc `fallback()` gọi đệ quy ngược lại hàm `refund()` hoặc `unpledge()` trước khi số dư của họ bị trừ trên biến trạng thái.
-* **Biện pháp khắc phục 2 lớp**:
-  1. **Mô hình CEI (Checks-Effects-Interactions)**:
-     ```solidity
-     // 1. CHECKS
-     uint256 balance = pledgedAmount[msg.sender];
-     if (balance == 0) revert NothingToRefund();
+### 3.1. CEI và bảo vệ tái nhập
+* **CEI:** refund kiểm tra điều kiện, xóa `pledgedAmount[msg.sender]`, giảm `pledged`, emit event, sau đó mới call chuyển tiền. Nếu call lỗi, `TransferFailed` rollback sổ sách và event. Mẫu code đầy đủ ở [mục 2.3.1](report/02_co_so_ly_thuyet.md).
+* **Guard tự cài đặt:** `_reentrancyStatus` chặn tái nhập các hàm có modifier trong cùng chuỗi lời gọi, không phải khóa đa luồng. Nested refund trong test bị chặn trước phần thân bởi `ReentrancyGuardTriggered`; không nhầm với `NothingToRefund` của checks sổ sách.
+* **Bằng chứng động:** test kiểm tra selector lỗi nested refund và refund bên ngoài vẫn hoàn tất; receiver từ chối ETH kiểm tra rollback/retry ở unpledge, claim, refund và sweep. Không suy ra đã kiểm tra mọi callback hoặc mọi chuỗi trạng thái.
 
-     // 2. EFFECTS: Xóa số dư về 0 TRƯỚC khi gửi tiền
-     pledgedAmount[msg.sender] = 0;
+### 3.2. Pull-over-Push và sổ sách
+* Vòng lặp push có thể bị một người nhận revert làm thất bại cả giao dịch hoặc vượt gas limit. Pull cho mỗi backer tự gọi refund; receiver từ chối ETH không làm backer khác mất khả năng gọi giao dịch riêng. Người gọi vẫn trả gas và cần ví có thể nhận ETH.
+* Bất biến sổ sách là `pledged == Σ pledgedAmount`, không phải balance luôn bằng pledged. Sau claim balance có thể về 0 trong khi sổ sách còn; forced ETH có thể làm balance lớn hơn pledged.
+* Sau EIP-6780, SELFDESTRUCT vẫn chuyển ETH kể cả từ contract cũ; điều kiện tạo và hủy cùng transaction liên quan đến xóa code/storage. Sweep chỉ lấy phần chênh dương theo điều kiện của hàm, chỉ creator và không bắt buộc hết hạn.
 
-     // 3. INTERACTIONS: Gửi tiền sau cùng
-     (bool success, ) = payable(msg.sender).call{value: balance}("");
-     if (!success) revert TransferFailed();
-     ```
-  2. **Biến Reentrancy Guard (`nonReentrant`)**: Biến trạng thái `_reentrancyStatus` khóa thực thi đa luồng nội bộ.
-
-### 3.2. Mô hình Rút tiền Chủ động (Pull over Push Payments)
-* **Nguy cơ DoS (Denial of Service)**: Nếu hợp đồng dùng vòng lặp `for` để tự động gửi tiền hoàn lại (Push Refund) cho tất cả danh sách người góp vốn, một hợp đồng độc hại chỉ cần cố tình `revert` trong hàm nhận tiền sẽ khiến **TOÀN BỘ** quá trình hoàn tiền của mọi người khác bị treo vĩnh viễn (Gas Limit Exceeded hoặc DoS with revert).
-* **Giải pháp**: Áp dụng mô hình **Pull Payment**. Hợp đồng cung cấp hàm `refund()` để **từng cá nhân tự gọi** và rút tiền về ví của chính mình. Người này lỗi không làm ảnh hưởng đến người khác.
-
-### 3.3. Tối ưu hóa Gas với Custom Errors (Solidity 0.8.20)
-* Thay vì sử dụng `require(condition, "Very long error description string...")` — khiến chuỗi lỗi phải nằm vĩnh viễn trong bytecode và EVM phải mở rộng memory để copy chuỗi khi revert — hợp đồng sử dụng `error GoalNotReached(); revert GoalNotReached();`.
-* **Hiệu quả:** Mỗi error chỉ tốn đúng **4 bytes** (Function Selector Hash) trong ABI. Lợi ích chính là **giảm kích thước bytecode/chi phí deploy** và cho phép dApp decode lỗi kiểu hóa (typed); mức tiết kiệm gas khi revert phụ thuộc độ dài chuỗi so sánh, nhóm trình bày trung thực theo đặc tả EVM thay vì con số quảng cáo.
+### 3.3. Custom errors và kết quả phân tích tĩnh
+* Error không tham số như `GoalNotReached()` có revert data 4 bytes selector; error có tham số còn có dữ liệu ABI-encoded. Không đồng nhất kích thước revert data với toàn bộ bytecode của xử lý lỗi.
+* Immutable/custom errors/guard placement có lý do tối ưu, nhưng chưa có benchmark để công bố mức gas tiết kiệm cố định.
+* Slither 0.11.6 được chạy lại với solc 0.8.20: Crowdfunding có 13 instance, factory kèm dependency có 16, không có High/Medium ở hai lượt. Có 7 Low về timestamp ở mỗi lượt; các lượt bị trùng dependency nên không cộng tổng. [Báo cáo và raw JSON](security/slither-report.md) ghi rõ scope, source hash, severity và triage. Đây không phải audit độc lập.
 
 ---
 
@@ -141,15 +202,16 @@ sequenceDiagram
 # 1. Di chuyển vào thư mục dự án
 cd lab02-crowdfunding-smart-contract
 
-# 2. Chạy bộ kiểm thử hai tầng (52 test cases: Mock + EVM thật)
+# 2. Chạy bộ kiểm thử hai tầng (18 mô hình + 41 EVM = 59 test)
 npm test
-# hoặc: npm run test:mock  (18 Mock spec-based)
-#        npm run test:evm   (34 Hardhat EVM — bytecode thật)
+# hoặc: npm run test:mock  (18 test mô hình JavaScript)
+#        npm run test:evm   (41 Hardhat EVM — bytecode thật)
+# Hardhat discovery có thể in lại log mô hình; không đếm thêm 18 test.
 
-# 3. Phân tích tĩnh bảo mật Slither (đã cài: pip install slither-analyzer solc-select)
+# 3. Phân tích tĩnh (cần Slither và solc); lệnh scoped/raw output xem security/slither-report.md
 npm run audit:static
 
-# 3. Chạy kịch bản mô phỏng trực quan các vòng đời chiến dịch
+# 4. Chạy kịch bản mô phỏng JavaScript, không thực thi bytecode
 npm run simulate
 # hoặc: node scripts/simulate.js
 ```
@@ -176,22 +238,22 @@ npx serve demo
 
 ---
 
-## 5. BỘ 10 CÂU HỎI VẤN ĐÁP PHẢN BIỆN (DEFENSE Q&A - BẢO VỆ ĐIỂM 10)
+## 5. MƯỜI CÂU HỎI TỰ LUYỆN VẤN ĐÁP
 
-Đây là cẩm nang trả lời các câu hỏi hóc búa nhất mà giảng viên thường đặt ra cho đề tài Crowdfunding:
+Các câu hỏi dưới giúp luyện giải thích code và giới hạn của hệ thống; không thay thế hiểu toàn bộ contract hoặc bảo đảm kết quả chấm điểm.
 
 #### Câu 1: Tại sao nhóm lại sử dụng `call{value: amount}("")` thay vì `transfer()` hoặc `send()`?
 > **Trả lời:**
-> Trước đây Solidity khuyến khích dùng `transfer()` vì nó giới hạn gas ở mức 2,300 gas nhằm chống Reentrancy. Tuy nhiên, sau các nâng cấp Ethereum (EIP-1884 tăng chi phí đọc opcode), mức 2,300 gas không còn đủ nếu địa chỉ nhận là một ví đa chữ ký (Gnosis Safe) hoặc smart contract có logic nhận tiền. `transfer()` sẽ bị lỗi `out of gas`. Hiện nay theo khuyến cáo chính thức từ Ethereum Foundation, lập trình viên phải dùng `call{value: ...}("")` kết hợp với mô hình **Checks-Effects-Interactions (CEI)** và **ReentrancyGuard** để vừa an toàn vừa hỗ trợ mọi loại ví.
+> Stipend 2.300 gas của transfer/send có thể không đủ cho logic nhận ETH của một số contract; không dùng stipend làm bằng chứng chống tái nhập. Call linh hoạt hơn nhưng vẫn chịu quy tắc chuyển tiếp gas của EVM/EIP-150 và người nhận có thể revert. Contract dùng CEI, guard tự cài đặt, kiểm tra success và rollback nếu chuyển lỗi. Test chứng minh một số trường hợp tương thích/thất bại, không bảo đảm hỗ trợ mọi ví.
 
 #### Câu 2: Biến thời gian `block.timestamp` có thể bị thợ đào (miner/validator) thao túng không?
 > **Trả lời:**
-> Có thể, nhưng chỉ trong một biên độ rất nhỏ (tối đa khoảng 12–15 giây theo quy tắc đồng thuận Ethereum POS Slot Time). Vì dự án Crowdfunding đặt hạn thời gian theo đơn vị ngày hoặc tuần (`duration >= 1 day`), độ lệch 15 giây hoàn toàn không ảnh hưởng đến tính công bằng của chiến dịch. Tuyệt đối không dùng `block.timestamp` cho các bài toán microsecond hoặc sinh số ngẫu nhiên.
+> Trên Ethereum PoS, timestamp của execution payload phải khớp thời điểm tính cho slot, không có quyền tùy chọn lệch ±12–15 giây cho cùng slot. Tuy nhiên slot có thể bị bỏ qua, giao dịch có thể đến muộn hoặc không được đưa vào block trước hạn. Contract so sánh timestamp của block thực thi, không phải lúc người dùng nhấn gửi. Duration thực tế cho phép 1 giây đến 365 ngày; 7 ngày chỉ là ví dụ. Không dùng timestamp làm nguồn ngẫu nhiên an toàn. Xem [đặc tả đồng thuận](https://github.com/ethereum/consensus-specs/blob/master/specs/bellatrix/beacon-chain.md#process_execution_payload).
 
 #### Câu 3: Giải thích chi tiết tại sao Push Refund lại nguy hiểm và Pull Refund giải quyết vấn đề đó thế nào?
 > **Trả lời:**
-> - Nếu dùng Push: Giả sử có 1,000 backer, hợp đồng dùng vòng lặp `for` duyệt qua 1,000 người để trả tiền. Nếu backer thứ 50 là một hợp đồng cố tình viết hàm `receive() { revert(); }`, toàn bộ giao dịch của 999 người còn lại sẽ bị revert theo. Quỹ tiền bị kẹt vĩnh viễn trong hợp đồng.
-> - Giải pháp Pull: Backer nào muốn lấy tiền thì tự mình gọi `refund()`. Giao dịch chỉ xử lý độc lập cho người đó, cô lập hoàn toàn rủi ro giữa các tài khoản.
+> - Với vòng lặp push xử lý tất cả người nhận trong cùng giao dịch và revert khi chuyển lỗi, một receiver revert có thể làm toàn bộ giao dịch thất bại; vòng lặp lớn còn có nguy cơ vượt gas limit.
+> - Pull tách thành giao dịch riêng của từng backer. Test dùng receiver từ chối ETH xác nhận backer khác vẫn refund được. Receiver lỗi vẫn có thể không nhận được khoản của họ; không suy ra mọi rủi ro giữa tài khoản đã được loại bỏ. Refund cũng không tự chạy hoặc hoàn phí gas.
 
 #### Câu 4: Trong hàm `refund()`, nếu lệnh gửi tiền `call` thất bại thì điều gì xảy ra?
 > **Trả lời:**
@@ -203,11 +265,11 @@ npx serve demo
 
 #### Câu 6: Custom Errors trong Solidity 0.8.20 tiết kiệm gas như thế nào so với `require` chuỗi dài?
 > **Trả lời:**
-> Chuỗi thông báo lỗi trong `require(condition, "Goal not reached yet")` được lưu trữ dưới dạng chuỗi UTF-8 trong bộ nhớ và bytecode. Mỗi từ 32 bytes tiêu tốn gas lưu trữ và triển khai. Custom error (`error GoalNotReached();`) chỉ được mã hóa thành 4 bytes function selector (`bytes4(keccak256("GoalNotReached()"))`), giúp tiết kiệm đáng kể kích thước hợp đồng khi deploy. Lưu ý trung thực: mức tiết kiệm gas khi revert phụ thuộc độ dài chuỗi và ngữ cảnh memory — không phải con số cố định; lợi ích chính là bytecode size + khả năng decode typed errors.
+> Custom error không tham số như GoalNotReached() trả revert data gồm 4 bytes selector. Nếu có tham số thì còn dữ liệu ABI-encoded của chúng. So với chuỗi lỗi dài, có thể giảm bytecode và chi phí mã hóa dữ liệu lỗi; không phải lưu chuỗi lỗi vào storage bằng SSTORE. Mức cải thiện phụ thuộc compiler, optimizer và đường thực thi. Nhóm chưa có benchmark đối chứng nên không nêu số gas tiết kiệm cố định.
 
 #### Câu 7: Có trường hợp nào số dư thực tế của hợp đồng (`address(this).balance`) lớn hơn biến `pledged` không?
 > **Trả lời:**
-> Có thể xảy ra nếu có ai đó cố tình dùng lệnh `selfdestruct(target)` từ một hợp đồng khác để ép gửi ETH vào, hoặc đào block nhận thưởng tới địa chỉ contract. Do đó, trong hàm `claim()`, chúng ta sử dụng `address(this).balance` để rút trọn vẹn số dư thực tế trong hợp đồng, tránh việc tiền bị kẹt.
+> Có, ví dụ SELFDESTRUCT chuyển ETH mà không chạy receive và không tăng pledged. EIP-6780 vẫn cho chuyển balance từ contract cũ; ngoại lệ cùng transaction liên quan đến việc xóa code/storage. Claim chuyển toàn bộ balance tại thời điểm claim; khi thiếu goal, creator chỉ có thể sweep phần dư dương theo điều kiện hàm. Chiều ngược lại cũng có thể xảy ra: sau claim, balance bằng 0 trong khi pledged/mapping vẫn còn. Vì vậy không coi balance == pledged là bất biến toàn vòng đời.
 
 #### Câu 8: `immutable` khác `constant` như thế nào trong hợp đồng này?
 > **Trả lời:**
@@ -220,11 +282,12 @@ npx serve demo
 
 #### Câu 10: Quy trình ký giao dịch và gửi lên mạng từ Web DApp diễn ra như thế nào?
 > **Trả lời:**
-> Trình duyệt gọi `ethers.BrowserProvider(window.ethereum)` để yêu cầu MetaMask cấp quyền. Khi người dùng bấm `Pledge`, Ethers.js tạo một đối tượng giao dịch (to, data mã hóa từ hàm `pledge()`, value là số ETH). MetaMask sẽ hiện popup để người dùng dùng Private Key ký số (ECDSA secp256k1) offline ngay trên máy của họ, sau đó gửi payload đã ký lên RPC Node (ví dụ Alchemy hoặc Infura) để phát sóng (broadcast) vào mempool của mạng Ethereum.
+> DApp dùng BrowserProvider, yêu cầu quyền tài khoản, kiểm tra chain ID/địa chỉ đích và tạo signer. Khi pledge, yêu cầu giao dịch có to, calldata của pledge() và value tính bằng wei; số tiền được parse từ chuỗi bằng ethers.parseEther. Với tài khoản khóa secp256k1 trong ví dùng ở demo, MetaMask yêu cầu xác nhận và ký cục bộ, không gửi khóa riêng cho DApp, rồi gửi giao dịch qua provider. Có hash chưa đồng nghĩa thành công: cần receipt, kiểm tra kết quả và đọc state. Giao dịch được đưa vào block rồi revert vẫn có thể tốn gas; kết quả provider giả lập không chứng minh đã có chữ ký/broadcast MetaMask thật.
 
 ---
 
 ## 6. KẾT LUẬN VÀ ĐÁNH GIÁ
 
-* Dự án đã giải quyết trọn vẹn và chuyên sâu toàn bộ yêu cầu của **Đề W (Nhóm C - Nâng cao)**.
-* Hệ thống được xây dựng hoàn chỉnh từ Smart Contract bảo mật đa tầng, kịch bản kiểm thử tự động 100% pass, bộ mô phỏng CLI chuyên nghiệp, đến giao diện Web DApp đồ họa cyberpunk 2 chế độ đáp ứng tối đa trải nghiệm của hội đồng chấm thi.
+* Đề tài triển khai các luồng góp vốn, rút trước hạn, giải ngân và hoàn tiền; mỗi thành viên có phần Solidity, test và báo cáo để giải thích.
+* Lần chạy npm test ngày 2026-11-08 đạt 18 test mô hình và 41 test EVM. Hai lượt Slither production không báo High/Medium, có Low/Informational được ghi trong raw JSON. Kết quả không xác nhận coverage 100%, audit độc lập hay an toàn tuyệt đối.
+* Sandbox là minh họa JavaScript, CLI là mô hình, Hardhat là EVM cục bộ. Khi trình bày giao dịch trên mạng kết nối phải có địa chỉ/chain ID, hash và receipt thực tế. Hiện không lấy kết quả provider giả lập làm bằng chứng ký/broadcast MetaMask thật.
