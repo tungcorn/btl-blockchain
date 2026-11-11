@@ -110,21 +110,30 @@ Test hiện có kiểm tra tạo campaign/event, phân trang, offset ngoài biê
 Chạy từ thư mục repository; regex dưới chọn test hiện có theo tên:
 
 ```bash
-# TV1: rút một phần, rút hết/góp lại, chặn tại endAt — 3 test
-npx hardhat test test/Crowdfunding.evm.test.js --grep "Unpledge một phần|TV1:"
+# TV1: nhiều backer góp, rút một phần, chặn rút tại endAt — 3 test
+npx hardhat test test/Crowdfunding.evm.test.js --grep "Nhiều backer góp:|Unpledge một phần:|TV1: unpledge tại đúng endAt"
 
 # TV2: đủ vốn trước hạn, claim đúng endAt, sai quyền — 3 test
-npx hardhat test test/Crowdfunding.evm.test.js --grep "TV2:|Người lạ claim|claim hợp lệ TẠI"
+npx hardhat test test/Crowdfunding.evm.test.js --grep "TV2: đủ goal|Người lạ claim|claim hợp lệ TẠI"
 
-# TV3: rollback/cô lập lỗi, nested refund, forced ETH — 3 test
-npx hardhat test test/Crowdfunding.evm.test.js --grep "refund lỗi rollback|ReentrancyAttacker:|Forced ETH qua"
+# TV3: refund đúng khoản, chặn hoàn hai lần, rollback/cô lập lỗi — 3 test
+npx hardhat test test/Crowdfunding.evm.test.js --grep "Refund đúng 100%|Refund hai lần|TV3: refund lỗi rollback"
 ```
 
 | Người trình bày | Bảng trước → sau cần giải thích |
 | :--- | :--- |
-| TV1 | Góp 3, rút 1: khoản cá nhân 3 → 2, pledged giảm 1, bộ đếm giữ nguyên. Rút toàn bộ: khoản về 0 và bộ đếm giảm; góp lại tăng bộ đếm. |
-| TV2 | Đủ goal tại endAt − 1: Active, claimed false, quỹ chưa chuyển. Tại endAt: creator claim được; sau claim claimed true, balance 0, sổ sách góp vẫn còn. |
-| TV3 | Receiver từ chối refund: mapping/pledged/balance không mất; backer khác vẫn refund được. Khi receiver chấp nhận ETH, retry hoàn khoản hợp lệ. |
+| TV1 | Nhiều backer: tổng pledged bằng tổng khoản ghi nhận. Góp 3, rút 1: khoản cá nhân 3 → 2, pledged giảm 1, bộ đếm giữ nguyên. Rút tại endAt bị chặn, sổ sách giữ nguyên. |
+| TV2 | Đủ goal tại endAt − 1: Active, claimed false, quỹ chưa chuyển. Tại endAt: creator claim được; sau claim claimed true, balance 0, sổ sách góp vẫn còn. Người lạ không được claim. |
+| TV3 | Refund thành công đưa khoản cá nhân về 0 và giảm pledged; hoàn lần hai bị chặn. Receiver từ chối refund: mapping/pledged/balance không mất; backer khác vẫn refund được; receiver chấp nhận ETH thì retry được. |
+
+**Trách nhiệm kiểm thử sâu theo luồng:** TV1 giải thích thêm rút hết/góp lại và unpledge lỗi rollback/retry; TV2 giải thích thêm claim lỗi rollback `claimed`, giữ quỹ và retry. TV3 phụ trách refund/sweep lỗi, nested refund, forced ETH, phạm vi fuzz và triage Slither; rà chéo cơ chế CEI/guard nhưng không nhận thay phần lỗi unpledge/claim. Nhãn TV trong tên test thể hiện trách nhiệm chuẩn bị, không phải bằng chứng tác giả lịch sử.
+
+```bash
+# Hai test rollback/retry do TV1 và TV2 phụ trách, ngoài bộ ba chính
+npx hardhat test test/Crowdfunding.evm.test.js --grep "TV1: unpledge lỗi rollback|TV2: claim lỗi rollback"
+```
+
+Trong lượt trình bày 3–4 phút/người, dùng một luồng demo, điều kiện Solidity và bảng trước/sau. Chuẩn bị sẵn kết quả ba test để đối chiếu; không bắt buộc chạy cả ba trực tiếp. Các test sâu và factory/forced ETH/fuzz/Slither dùng khi được hỏi.
 
 **Giới hạn kết luận:** các test xác nhận những kịch bản được thực thi, chưa có số liệu coverage để nói bao phủ 100% custom errors/branches. Chưa kiểm chứng mọi seed, mọi kiểu callback hay toàn bộ vòng đời trong fuzz. Không suy ra an toàn tuyệt đối.
 

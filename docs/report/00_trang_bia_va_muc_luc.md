@@ -31,7 +31,7 @@
 
 </div>
 
-**Nguyên tắc phân công:** mỗi người phụ trách lý thuyết, Solidity, test, nội dung báo cáo và demo của một luồng Blockchain. Cả ba cùng chuẩn bị mục 2.4 (Web3), thực nghiệm ở 3.4 và kiến thức vấn đáp nền tảng; không có vai trò chỉ làm frontend/slide. Đây là kế hoạch trách nhiệm, không xác nhận tác giả lịch sử hay tỷ lệ đóng góp thực tế. Xem [phân công chi tiết, kịch bản demo và checklist bảo vệ](../group_report.md).
+**Nguyên tắc phân công:** mỗi người phụ trách lý thuyết, Solidity, test, nội dung báo cáo và demo của một luồng Blockchain. TV1 chịu trách nhiệm cả rollback/retry khi unpledge lỗi; TV2 chịu trách nhiệm cả rollback/retry khi claim lỗi; TV3 phụ trách refund/an toàn và rà chéo cơ chế chung, không giải thích thay hai luồng kia. Cả ba cùng chuẩn bị mục 2.4 (Web3), thực nghiệm ở 3.4 và kiến thức vấn đáp nền tảng; TV2 làm đầu mối tích hợp Web3, không có vai trò chỉ làm frontend/slide. Vòng rà chéo: TV1 rà TV2, TV2 rà TV3, TV3 rà TV1. Đây là kế hoạch trách nhiệm, không xác nhận tác giả lịch sử hay tỷ lệ đóng góp thực tế. Xem [phân công chi tiết, kịch bản demo và checklist bảo vệ](../group_report.md).
 
 ---
 

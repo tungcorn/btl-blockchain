@@ -111,10 +111,10 @@ Each member owns Solidity reasoning, relevant tests, report content, demo and or
 
 | Member | Required core | Advanced follow-up |
 | --- | --- | --- |
-| 1 | Contributions/early withdrawal: `pledge`, `unpledge`, ETH/wei and mapping | `receive`, events and contributor counting |
-| 2 | Goal/deadline/state, creator permission and `claim` | Factory, pagination and gas choices |
-| 3 | `refund`, CEI, guard, rollback and refund isolation | Forced ETH, sweep, fuzz and Slither |
+| 1 | Contributions/early withdrawal: `pledge`, `unpledge`, ETH/wei and mapping | `receive`, events, contributor counting and unpledge rollback/retry |
+| 2 | Goal/deadline/state, creator permission and `claim` | Claim rollback/retry, factory, pagination and gas choices |
+| 3 | `refund`, CEI, guard, refund rollback and isolation | Nested refund, forced ETH, sweep, fuzz and Slither |
 
-Web3, UI and slides are shared supporting work, not any member's only technical topic. Each person prepares a before/after table and three representative EVM tests. This is a responsibility plan, not a claim of historical code authorship or verified contribution percentages.
+Web3, UI and slides are shared supporting work, not any member's only technical topic. Member 2 coordinates Web3 integration; each member verifies their own flow. Cross-review follows 1 → 2 → 3 → 1. Each person prepares a before/after table and three representative EVM tests, with results ready for reference rather than requiring all three to run during a 3–4 minute presentation. Each member supplies their own results/limitations for the conclusion; member 3 consolidates them. This is a responsibility plan, not a claim of historical code authorship or verified contribution percentages.
 
 See [the detailed assignment and defense checklist](docs/group_report.md).

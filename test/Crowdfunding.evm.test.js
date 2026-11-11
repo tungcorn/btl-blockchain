@@ -333,7 +333,7 @@ describe("Crowdfunding.sol — Layer 2 (EVM thật trên Hardhat Network)", func
       expect(await ethers.provider.getBalance(receiverAddress)).to.equal(ONE);
     });
 
-    it("TV3: unpledge lỗi rollback sổ sách/bộ đếm và có thể retry", async function () {
+    it("TV1: unpledge lỗi rollback sổ sách/bộ đếm và có thể retry", async function () {
       const { campaign } = await deployCampaign();
       const receiver = await deployRejectingReceiver();
       const receiverAddress = await receiver.getAddress();
@@ -356,7 +356,7 @@ describe("Crowdfunding.sol — Layer 2 (EVM thật trên Hardhat Network)", func
       expect(await ethers.provider.getBalance(receiverAddress)).to.equal(ONE);
     });
 
-    it("TV3: claim lỗi rollback claimed, giữ quỹ và có thể retry", async function () {
+    it("TV2: claim lỗi rollback claimed, giữ quỹ và có thể retry", async function () {
       const [, alice] = await ethers.getSigners();
       const receiver = await deployRejectingReceiver();
       const receiverAddress = await receiver.getAddress();

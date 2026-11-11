@@ -21,9 +21,9 @@ Nhóm chia theo **góp vốn — giải ngân — hoàn tiền & an toàn quỹ*
 
 | Thành viên | Chủ đề Blockchain chính | Phạm vi Solidity phụ trách | Kiểm thử và minh chứng phải giải thích |
 | :--- | :--- | :--- | :--- |
-| **Thành viên 1 — Góp vốn & rút trước hạn** | ETH/wei, `payable`, `msg.sender`, `msg.value`, mapping lưu đóng góp, storage và event; cập nhật sổ sách khi góp/rút. | `pledge()`, `receive()`, `unpledge(uint256)`; `pledged`, `pledgedAmount`, `contributorCount`; event `Pledge`/`Unpledge`. | Nhiều ví góp, góp 0, chuyển ETH trực tiếp, rút một phần/toàn bộ, rút quá khoản góp, chặn góp/rút tại và sau hạn. Giải thích số dư cá nhân và tổng ghi nhận trước/sau giao dịch. |
-| **Thành viên 2 — Vòng đời & giải ngân** | Máy trạng thái, `block.timestamp`, mục tiêu và deadline, quyền creator, `immutable`, custom error; triển khai nhiều chiến dịch bằng factory. | `constructor`, `state()`, `timeLeft()`, `progressBasisPoints()`, `onlyCreator`, `claim()`, cờ `claimed`; [CrowdfundingFactory.sol](../contracts/CrowdfundingFactory.sol). | Validation khởi tạo; đủ vốn nhưng chưa hết hạn; đúng giây `endAt`; đúng/sai người gọi; claim hai lần; vượt mục tiêu; tạo chiến dịch, phân trang và tính độc lập qua factory. |
-| **Thành viên 3 — Hoàn tiền & an toàn quỹ** | Pull-over-Push, CEI, reentrancy, revert khi chuyển ETH lỗi, forced ETH; phân biệt sổ sách và số dư thật; giới hạn của test/phân tích tĩnh. | `refund()`, `sweepExcessEther()`, modifier `nonReentrant` tự cài đặt; rà soát CEI tại các hàm chuyển ETH cùng TV1/TV2; [hợp đồng kiểm thử an toàn](../contracts/testing/Attackers.sol). | Thất bại sau hạn; hoàn đúng khoản góp, không hoàn hai lần; chặn refund khi thành công; nested refund, forced ETH, sweep chỉ phần dư; kiểm tra bất biến và giải thích phạm vi fuzz. |
+| **Thành viên 1 — Góp vốn & rút trước hạn** | ETH/wei, `payable`, `msg.sender`, `msg.value`, mapping lưu đóng góp, storage và event; cập nhật sổ sách khi góp/rút. | `pledge()`, `receive()`, `unpledge(uint256)`; `pledged`, `pledgedAmount`, `contributorCount`; event `Pledge`/`Unpledge`. | Nhiều ví góp, góp 0, chuyển ETH trực tiếp, rút một phần/toàn bộ, rút quá khoản góp, chặn góp/rút tại và sau hạn. Phụ trách cả test unpledge chuyển ETH lỗi: rollback khoản cá nhân/tổng/bộ đếm và retry. |
+| **Thành viên 2 — Vòng đời & giải ngân** | Máy trạng thái, `block.timestamp`, mục tiêu và deadline, quyền creator, `immutable`, custom error; triển khai nhiều chiến dịch bằng factory. | `constructor`, `state()`, `timeLeft()`, `progressBasisPoints()`, `onlyCreator`, `claim()`, cờ `claimed`; [CrowdfundingFactory.sol](../contracts/CrowdfundingFactory.sol). | Validation khởi tạo; đủ vốn nhưng chưa hết hạn; đúng giây `endAt`; đúng/sai người gọi; claim hai lần; vượt mục tiêu; factory. Phụ trách cả test claim chuyển ETH lỗi: rollback `claimed`, giữ quỹ và retry. |
+| **Thành viên 3 — Hoàn tiền & an toàn quỹ** | Pull-over-Push, CEI, reentrancy, revert khi chuyển ETH lỗi, forced ETH; phân biệt sổ sách và số dư thật; giới hạn của test/phân tích tĩnh. | `refund()`, `sweepExcessEther()`, modifier `nonReentrant` tự cài đặt; giải thích cơ chế chung và rà chéo CEI/guard với TV1/TV2; [hợp đồng kiểm thử an toàn](../contracts/testing/Attackers.sol). | Thất bại sau hạn; hoàn đúng khoản góp, không hoàn hai lần; chặn refund khi thành công; refund lỗi rollback/retry và cô lập lỗi giữa backer. Nested refund, forced ETH, sweep, fuzz và Slither là phần chuyên sâu; không nhận thay test lỗi unpledge/claim của TV1/TV2. |
 
 **Mã nguồn và bộ test dùng chung:** [Crowdfunding.sol](../contracts/Crowdfunding.sol), [test EVM trên Hardhat](../test/Crowdfunding.evm.test.js) và [test mô hình JavaScript](../test/Crowdfunding.test.js). Mỗi người phụ trách các ca thuộc luồng của mình trong cả hai tầng khi có tương ứng; không coi mô hình JavaScript là thực thi Solidity. Các mục kiểm thử trên là phạm vi cần kiểm tra/chuẩn bị, không khẳng định mọi trường hợp đã có test riêng. Nếu thiếu, người phụ trách bổ sung hoặc ghi rõ khoảng trống.
 
@@ -37,11 +37,15 @@ Giữ bố cục báo cáo 4 phần hiện có; chia nội dung **bên trong t�
 | **TV2** | Phần 2: mục 2.2 về timestamp, `immutable`, custom error. Phần 3: mục 3.1 về trạng thái/phân quyền; mục 3.2.2 phần constructor/claim và các hàm đọc trạng thái; mục 3.2.3 factory; test vòng đời/factory ở 3.3, demo giải ngân ở 3.4. Rà lại mục tiêu/phạm vi 1.4 cùng TV1. |
 | **TV3** | Phần 2: mục 2.3 về CEI/Pull-over-Push/reentrancy. Phần 3: mục 3.2.2 phần refund/sweep và guard; test an toàn/fuzz ở 3.3, phân tích kết quả Slither ở 3.3.1, demo thất bại/hoàn tiền ở 3.4. Chủ trì tổng hợp [Phần 4](report/04_ket_luan_va_huong_phat_trien.md), hai thành viên còn lại cung cấp kết quả và hạn chế của luồng mình. |
 
-**Nội dung chung:** cả ba cùng viết/rà mục 2.4 (tương tác Web3) và 3.4 (thực nghiệm). TV1 giải thích gửi giá trị ETH/wei; TV2 giải thích signer, chain/contract và quyền creator; TV3 giải thích receipt, giao dịch lỗi và kiểm tra trạng thái sau giao dịch. Mỗi người bổ sung hình/bảng hoặc log test của chính luồng mình; một người chỉ tổng hợp định dạng cuối cùng, không nhận thay phần chuyên môn của người khác.
+**Nội dung chung:** cả ba cùng viết/rà mục 2.4 (tương tác Web3) và 3.4 (thực nghiệm). TV1 giải thích gửi giá trị ETH/wei và rollback khi unpledge lỗi; TV2 giải thích signer, chain/contract, quyền creator và rollback khi claim lỗi; TV3 giải thích receipt, giao dịch lỗi, rollback khi refund/sweep lỗi và cơ chế an toàn chung. Mỗi người bổ sung hình/bảng hoặc log test của chính luồng mình; một người chỉ tổng hợp định dạng cuối cùng, không nhận thay phần chuyên môn của người khác.
+
+**Đầu mối tích hợp Web3 — TV2:** tổng hợp kiểm tra toàn luồng trên cùng chain/campaign và ghi nhận môi trường, kết quả, phần chưa xác minh. TV1 kiểm tra nhập ETH/wei, góp/rút và ledger; TV2 kiểm tra kết nối, đổi account/chain, quyền creator và claim; TV3 kiểm tra refund, receipt và xử lý lỗi. Đầu mối không làm thay các thành viên và không được ghi nhận giao dịch mạng thật nếu chỉ chạy mock/sandbox.
+
+**Tổng hợp Phần 4:** TV1 viết kết quả/hạn chế của góp/rút, TV2 viết vòng đời/claim/factory/Web3, TV3 viết refund/an toàn và ghép các đoạn thành kết luận thống nhất. TV3 không phải tự viết thay kết quả và hướng phát triển của cả nhóm.
 
 ### 1.3. Kịch bản trình bày và vấn đáp theo người
 
-Gợi ý **3–4 phút/người**, điều chỉnh theo thời lượng giảng viên cho phép; đây là thời lượng chuẩn bị, không phải tỷ lệ đóng góp. Mỗi người phải chỉ được điều kiện trong code, thay đổi storage và kết quả kiểm thử, không chỉ bấm nút giao diện.
+Gợi ý **3–4 phút/người**, điều chỉnh theo thời lượng giảng viên cho phép; đây là thời lượng chuẩn bị, không phải tỷ lệ đóng góp. Mỗi người trình bày một luồng demo, chỉ điều kiện Solidity và một bảng state trước/sau, không chỉ bấm nút giao diện. Chuẩn bị sẵn kết quả ba test tiêu biểu để đối chiếu; không bắt buộc chạy cả ba test trực tiếp trong lượt nói. Mở code/test lỗi chi tiết và phần nâng cao khi được hỏi, tránh dồn toàn bộ phạm vi phụ trách vào 3–4 phút.
 
 #### Thành viên 1: Tiền đi vào và quyền rút trước hạn
 
@@ -57,7 +61,7 @@ Gợi ý **3–4 phút/người**, điều chỉnh theo thời lượng giảng 
 
 #### Thành viên 3: Thất bại thì tiền được bảo vệ thế nào?
 
-- **Trình tự demo:** chọn kịch bản thất bại sau hạn → chọn backer có góp → refund → chỉ ra khoản góp cá nhân về 0, tổng ghi nhận giảm và không thể hoàn lần hai. Chuyển sang test EVM/hợp đồng kiểm thử để giải thích nested refund và forced ETH; không dùng animation sandbox làm bằng chứng chống tấn công.
+- **Trình tự demo:** chọn kịch bản thất bại sau hạn → chọn backer có góp → refund → chỉ ra khoản góp cá nhân về 0, tổng ghi nhận giảm và không thể hoàn lần hai. Dùng kết quả test EVM để đối chiếu refund lỗi rollback và backer khác vẫn rút được. Nested refund/forced ETH chuẩn bị cho phần hỏi sâu, không bắt buộc chạy trong lượt chính; không dùng animation sandbox làm bằng chứng chống tấn công.
 - **Luận điểm cần nói:** người góp tự gọi refund, không duyệt danh sách để đẩy tiền; CEI cập nhật sổ sách trước external call, guard tự cài đặt chặn tái nhập các hàm có bảo vệ; nếu chuyển ETH lỗi và revert thì thay đổi trong giao dịch cũng rollback. `pledged == Σ pledgedAmount` là bất biến sổ sách, không có nghĩa luôn bằng `address(this).balance`. Sau claim có thể `balance = 0` mà `pledged > 0`; forced ETH có thể khiến `balance > pledged`.
 - **Câu hỏi tự luyện:** Tại sao không hoàn tiền bằng vòng lặp? CEI và `nonReentrant` khác nhau thế nào? `call` thất bại thì khoản ghi nhận có mất không? Sweep có lấy tiền thuộc khoản góp không? Sweep có bắt buộc hết hạn không? Test/fuzz/Slither chứng minh được và chưa chứng minh được điều gì?
 - **Điểm phải nói đúng:** `sweepExcessEther()` chỉ cho creator rút `balance - pledged` khi dương, không yêu cầu hết hạn. Fuzz hiện tại kiểm tra các thao tác trong phạm vi kịch bản của test, không phải chứng minh hình thức cho mọi trạng thái. Passing tests hay chạy Slither không đồng nghĩa đã audit hoặc an toàn tuyệt đối.
@@ -68,9 +72,9 @@ Mỗi người chuẩn bị 3–4 phút cho phần cốt lõi; phần nâng cao 
 
 | Thành viên | Bắt buộc trình bày | Dự phòng khi hỏi sâu |
 | :--- | :--- | :--- |
-| TV1 | Góp/rút, ETH/wei, mapping và thay đổi sổ sách | receive, event, rút hết/góp lại và contributorCount |
-| TV2 | Mục tiêu + deadline + quyền creator + claim | Factory, phân trang, immutable và custom errors |
-| TV3 | Refund, CEI, guard, rollback và cô lập lỗi giữa backer | Forced ETH, sweep, fuzz và Slither |
+| TV1 | Góp/rút, ETH/wei, mapping và thay đổi sổ sách | receive, event, rút hết/góp lại, contributorCount và test unpledge lỗi rollback/retry |
+| TV2 | Mục tiêu + deadline + quyền creator + claim | Test claim lỗi rollback/retry; factory, phân trang, immutable và custom errors |
+| TV3 | Refund, CEI, guard, rollback khi refund lỗi và cô lập lỗi giữa backer | Nested refund, forced ETH, sweep, fuzz và Slither |
 
 **Minh chứng cho mỗi người:** một bảng trước/sau và ba test EVM tiêu biểu. [Mục 3.3 của báo cáo](report/03_trien_khai_va_thuc_nghiem.md) có bảng đối chiếu và lệnh lọc test theo người. Đây là tiêu chí chuẩn bị, không tự xác nhận thành viên đã hoàn thành.
 
@@ -84,6 +88,16 @@ Cả ba phải giải thích được:
 4. Ranh giới nghiệp vụ: `unpledge` trước hạn; `claim` sau hạn khi đủ mục tiêu và đúng creator; `refund` sau hạn khi không đủ mục tiêu. Cả ba đọc toàn bộ contract để trả lời câu hỏi nối giữa các luồng.
 
 **Công việc hỗ trợ dùng chung:** TV1 kiểm tra nhập số tiền và hiển thị ledger; TV2 kiểm tra điều kiện mục tiêu/thời hạn/phân quyền và kết nối đúng campaign; TV3 kiểm tra thông báo lỗi, receipt và luồng refund. UI/CSS, slide, CLI simulator và định dạng báo cáo được phối hợp theo năng lực, không thay thế phần Blockchain chính của bất kỳ ai. Khi sửa cùng file contract/test, nhóm thống nhất lượt hoặc tách commit nhỏ, tránh ba người sửa chồng cùng đoạn.
+
+**Vòng rà chéo bắt buộc trước khi chốt báo cáo/demo:**
+
+| Người rà | Phần cần rà | Câu hỏi đối chiếu chính |
+| :--- | :--- | :--- |
+| TV1 → TV2 | Vòng đời/claim | Goal và deadline có được xét đúng với sổ sách góp? Sau claim, balance và pledged được giải thích đúng không? |
+| TV2 → TV3 | Refund/an toàn | Nhánh thành công/thất bại mở đúng quyền refund? Refund lỗi có rollback và giữ khả năng refund riêng của backer khác không? |
+| TV3 → TV1 | Góp/rút | Mapping/tổng/bộ đếm có nhất quán? CEI/guard và rollback khi unpledge lỗi có được giải thích đúng không? |
+
+Người rà ghi lại mục đã kiểm tra, nhận xét và kết quả xử lý; người phụ trách luồng vẫn chịu trách nhiệm sửa và giải thích phần của mình. Đây là kiểm tra chéo trong nhóm, không phải audit độc lập.
 
 **Mỗi người chuẩn bị đủ 5 minh chứng:**
 
