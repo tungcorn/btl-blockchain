@@ -18,11 +18,11 @@
 
 <br>
 
-| STT | Họ và tên sinh viên | Mã số sinh viên | Vai trò & Nhiệm vụ chính |
+| STT | Họ và tên sinh viên | Mã số sinh viên | Chủ đề bảo vệ chính |
 | :---: | :--- | :---: | :--- |
-| **1** | [Điền tên Thành viên 1] | [MSSV 1] | **Góp vốn & rút trước hạn**: ETH/wei, payable, mapping; `pledge`, `receive`, `unpledge`; test và demo góp/rút. Báo cáo: Phần 1, mục 2.1 và nội dung luồng này trong 3.2.2, 3.3, 3.4. |
-| **2** | [Điền tên Thành viên 2] | [MSSV 2] | **Vòng đời & giải ngân**: mục tiêu/deadline, trạng thái, quyền creator, `claim`, factory; test và demo giải ngân. Báo cáo: mục 2.2, 3.1, phần constructor/claim/hàm đọc trong 3.2.2, 3.2.3 và nội dung tương ứng ở 3.3, 3.4. |
-| **3** | [Điền tên Thành viên 3] | [MSSV 3] | **Hoàn tiền & an toàn quỹ**: `refund`, `sweepExcessEther`, CEI, guard, forced ETH và bất biến; test và demo hoàn tiền. Báo cáo: mục 2.3, phần refund/sweep/guard trong 3.2.2, test an toàn ở 3.3, 3.3.1 và demo ở 3.4; tổng hợp Phần 4 cùng cả nhóm. |
+| **1** | [Điền tên Thành viên 1] | [MSSV 1] | **Góp vốn và quyền rút trước hạn**: vì sao cần khoản cá nhân và tổng khoản góp; `pledge`/`unpledge` cập nhật nhất quán, quyền caller và rollback. Có code, test và bảng trước/sau; không chỉ giải thích cú pháp. |
+| **2** | [Điền tên Thành viên 2] | [MSSV 2] | **Điều kiện giải ngân thành công**: đủ goal chưa đủ; cần hết hạn, đúng creator và chưa claim. Giải thích trạng thái, `claim`, balance/accounting trước-sau. Factory và chi tiết Web3 để hỏi sâu. |
+| **3** | [Điền tên Thành viên 3] | [MSSV 3] | **Hoàn tiền khi thất bại và chống hoàn sai**: refund theo caller, đúng khoản, không hoàn hai lần; CEI/guard và rollback trong luồng refund. Không đại diện toàn bộ bảo mật của nhóm; minh chứng nâng cao để hỏi sâu. |
 
 <br>
 
@@ -31,7 +31,7 @@
 
 </div>
 
-**Nguyên tắc phân công:** mỗi người phụ trách lý thuyết, Solidity, test, nội dung báo cáo và demo của một luồng Blockchain. TV1 chịu trách nhiệm cả rollback/retry khi unpledge lỗi; TV2 chịu trách nhiệm cả rollback/retry khi claim lỗi; TV3 phụ trách refund/an toàn và rà chéo cơ chế chung, không giải thích thay hai luồng kia. Cả ba cùng chuẩn bị mục 2.4 (Web3), thực nghiệm ở 3.4 và kiến thức vấn đáp nền tảng; TV2 làm đầu mối tích hợp Web3, không có vai trò chỉ làm frontend/slide. Vòng rà chéo: TV1 rà TV2, TV2 rà TV3, TV3 rà TV1. Đây là kế hoạch trách nhiệm, không xác nhận tác giả lịch sử hay tỷ lệ đóng góp thực tế. Xem [phân công chi tiết, kịch bản demo và checklist bảo vệ](../group_report.md).
+**Nguyên tắc phân công:** chia ba luận điểm để cùng bảo vệ một sản phẩm, không chia module phát triển độc lập. Bảng trên là phần nói chính; phạm vi đọc code/test, biên soạn báo cáo và chuẩn bị hỏi sâu rộng hơn, xem [phân công chi tiết và checklist diễn tập](../group_report.md). Mỗi người chứng minh quy tắc → thiết kế → ca đúng/sai → bằng chứng, không cân bằng bằng số hàm/slide. TV1 giải thích cả rollback unpledge; TV2 giải thích rollback claim; TV3 giải thích refund, không gánh mọi câu hỏi bảo mật. Cả ba hiểu vòng đời tiền, Web3/gas/receipt và giới hạn kiểm chứng; factory, forced ETH, fuzz/Slither là phần hỏi sâu. TV2 vẫn làm đầu mối tích hợp Web3, TV3 tổng hợp kết luận từ nội dung cả nhóm. Rà chéo 1 → 2 → 3 → 1 và diễn tập không đọc slide, có câu hỏi nối luồng. Đây là kế hoạch chuẩn bị, không xác nhận tác giả lịch sử, tỷ lệ đóng góp hoặc thành viên đã sẵn sàng.
 
 ---
 

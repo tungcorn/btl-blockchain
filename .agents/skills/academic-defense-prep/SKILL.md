@@ -9,11 +9,13 @@ description: Chuẩn bị bảo vệ Đề W theo ba luồng Blockchain, phân b
 
 ## Phân công và thời lượng
 
-- TV1: pledge/receive/unpledge, ETH/wei, mapping, contributorCount; cả rollback/retry khi unpledge lỗi.
-- TV2: constructor, goal/deadline/state, quyền creator, claim; cả rollback/retry khi claim lỗi. Đầu mối tích hợp Web3; factory là phần hỏi sâu.
-- TV3: refund, CEI, guard tự cài đặt, rollback/cô lập lỗi; nested refund, forced ETH, sweep, fuzz và Slither là phần hỏi sâu.
-- Mỗi người tự nói và thao tác luồng của mình trong 3–4 phút nếu thời lượng cho phép. Vai trò bấm máy/hỗ trợ code có thể luân phiên, không cố định một người chỉ thao tác và một người trả lời mọi câu kỹ thuật.
-- Chuẩn bị một bảng state trước/sau và ba test EVM tiêu biểu/người. Có sẵn kết quả để đối chiếu, không bắt buộc chạy tất cả trực tiếp.
+- Đây là chia để bảo vệ chung một sản phẩm, không phải chia module làm việc độc lập. Tách phạm vi chuẩn bị ở group_report mục 1.1–1.2 khỏi nội dung nói ở 1.3–1.4; không suy ra tác giả lịch sử hoặc tỷ lệ đóng góp.
+- TV1 — Góp vốn và quyền rút trước hạn: chứng minh vì sao cần mapping cá nhân và tổng pledged, cập nhật nhất quán khi góp/rút. ETH/wei/payable là phương tiện giải thích, không chỉ đọc cú pháp. Hiểu cả rollback/retry khi unpledge lỗi.
+- TV2 — Điều kiện giải ngân thành công: đủ goal chưa đủ, còn deadline/quyền creator/chưa claim; giải thích state và balance/accounting trước-sau. Factory, immutable/custom errors và chi tiết Web3 để hỏi sâu; không giữ một slide chính riêng chỉ để giảng stack kết nối. Hiểu rollback/retry khi claim lỗi.
+- TV3 — Hoàn tiền khi thất bại và chống hoàn sai: refund đúng caller/khoản, không hoàn hai lần; CEI/guard/rollback gắn với refund và giao dịch backer riêng. Không biến lượt chính thành tổng quan mọi vấn đề bảo mật.
+- Nested refund, forced ETH, sweep, fuzz và Slither là minh chứng mở rộng chung; TV3 làm đầu mối chuẩn bị sâu, TV1/TV2 vẫn hiểu giới hạn và chịu trách nhiệm lỗi/an toàn luồng mình. Web3/gas/receipt là nền chung; đầu mối tích hợp TV2 không làm thay cả nhóm.
+- Mỗi người tự nói và thao tác luồng của mình trong 3–4 phút nếu thời lượng cho phép, theo quy tắc → quyết định thiết kế → ca đúng/sai → bằng chứng. Không cân bằng bằng số slide/hàm/test. Vai trò bấm máy/hỗ trợ code có thể luân phiên, không cố định một người chỉ thao tác.
+- Chuẩn bị một bảng state trước/sau và ba test EVM tiêu biểu/người. Có sẵn kết quả để đối chiếu, không bắt buộc chạy tất cả trực tiếp. Diễn tập không đọc slide, đổi caller/amount/time và hỏi nối luồng theo group_report mục 1.6; ghi chỗ vướng/kết quả luyện lại, không tự đánh dấu đã sẵn sàng.
 
 ## Mạch trình bày
 

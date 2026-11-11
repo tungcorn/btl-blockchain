@@ -4,7 +4,9 @@
 
 Yêu cầu đã biết: **Đề W — viết hợp đồng thông minh crowdfunding có mục tiêu và hạn thời gian**. Chưa có rubric chi tiết trong repo; bảng dưới phân biệt chức năng cốt lõi với quy tắc nhóm lựa chọn và phần mở rộng, không khẳng định giảng viên yêu cầu từng tính năng phụ.
 
-| Yêu cầu/quy tắc | Solidity | Minh chứng EVM hiện có | Chủ trì |
+**Cách đọc phân công:** cột cuối là đầu mối chuẩn bị/giải thích sâu, không xác nhận tác giả hoặc quy định mọi mục phải nói trong lượt chính. Ba luận điểm trình bày ở [mục 1.3](../group_report.md); factory, forced ETH và công cụ kiểm chứng là phần mở rộng. Bảo mật và giới hạn bằng chứng là trách nhiệm chung; mỗi người giải thích lỗi/rollback của luồng mình.
+
+| Yêu cầu/quy tắc | Solidity | Minh chứng EVM hiện có | Đầu mối chuẩn bị |
 | :--- | :--- | :--- | :--- |
 | Mục tiêu vốn, deadline — lõi đề | constructor, goal, endAt | Validation goal/duration; claim tại endAt | TV2 |
 | Nhận/ghi khoản góp — nghiệp vụ | pledge, receive, pledgedAmount | Nhiều backer góp; nhận ETH qua receive | TV1 |

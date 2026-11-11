@@ -120,14 +120,16 @@ Test helpers are not production wallets or deployment targets. `RejectingReceive
 
 ## Group responsibilities — 3 members
 
-Each member owns Solidity reasoning, relevant tests, report content, demo and oral defense for one Blockchain flow:
+This is a division of **oral-defense arguments for one shared product**, not independent development modules. Preparation includes code reasoning, tests and report evidence; the main presentation is narrower:
 
-| Member | Required core | Advanced follow-up |
+| Member | Core argument to demonstrate | Advanced preparation |
 | --- | --- | --- |
-| 1 | Contributions/early withdrawal: `pledge`, `unpledge`, ETH/wei and mapping | `receive`, events, contributor counting and unpledge rollback/retry |
-| 2 | Goal/deadline/state, creator permission and `claim` | Claim rollback/retry, factory, pagination and gas choices |
-| 3 | `refund`, CEI, guard, refund rollback and isolation | Nested refund, forced ETH, sweep, fuzz and Slither |
+| 1 — Contributions and early-withdrawal rights | Receiving ETH is not enough: per-backer mapping and total pledges must stay consistent during pledge/unpledge. Explain caller rights, a rejected withdrawal and rollback, not just Solidity syntax. | `receive`, full withdrawal/re-entry, contributor counting and detailed unpledge rollback/retry tests |
+| 2 — Successful settlement conditions | Reaching the goal is not enough: claim also requires expiry, the creator and no prior claim. Compare state, balance and accounting before/after. | Claim rollback/retry, factory/pagination, gas choices and detailed Web3 integration |
+| 3 — Failed-campaign refunds without incorrect repayment | Refund the caller's recorded amount once; explain CEI, guard, rollback and separate backer transactions through the refund code, not a general security lecture. | Nested refund, forced ETH, sweep, fuzz and Slither as shared project evidence, with member 3 coordinating deeper preparation |
 
-Web3, UI and slides are shared supporting work, not any member's only technical topic. Member 2 coordinates Web3 integration; each member verifies their own flow. Cross-review follows 1 → 2 → 3 → 1. Each person prepares a before/after table and three representative EVM tests, with results ready for reference rather than requiring all three to run during a 3–4 minute presentation. Each member supplies their own results/limitations for the conclusion; member 3 consolidates them. This is a responsibility plan, not a claim of historical code authorship or verified contribution percentages.
+Web3/gas/receipts and the complete funds lifecycle are common knowledge; UI and slides are supporting work, not anyone's only topic. Member 2 coordinates integration without presenting the entire Web3 stack in the main slot. Security is shared: members 1 and 2 explain failure/rollback in their own flows, not delegate all difficult questions to member 3.
+
+Each speaker follows **rule → design decision → valid/rejected case → before/after evidence**. Cross-review follows 1 → 2 → 3 → 1. Prepare a before/after table and three representative EVM tests, with results ready rather than running everything in a suggested 3–4 minute slot. Rehearse without reading slides, predict changes to caller/amount/time, and answer one cross-flow question; record gaps and retry results in the defense checklist. Equal slide/function/test counts do not establish balance or readiness. Each member supplies their results/limitations; member 3 consolidates. The plan does not establish historical authorship or contribution percentages.
 
 See [the detailed assignment and defense checklist](docs/group_report.md), [nine-slide speaking content](docs/defense-slides.md), [references](docs/report/05_tai_lieu_tham_khao.md) and [requirements/evidence appendix](docs/report/06_doi_chieu_va_minh_chung.md). Names/student IDs, final document export and manual-wallet verification remain group sign-off tasks, not automatically completed by this plan.
