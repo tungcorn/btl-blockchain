@@ -1164,7 +1164,11 @@ async function refreshOnChainState() {
     setText('w3State', web3StateLabel(Number(stateId)));
     setText('w3Pledged', `${ethers.formatEther(pledged)} / ${ethers.formatEther(goal)} ETH`);
     const secs = Number(timeLeft);
-    setText('w3TimeLeft', secs === 0 ? 'Đã hết hạn' : `${(secs / 86400).toFixed(1)} ngày`);
+    const remaining = secs < 3600
+      ? `${Math.floor(secs / 60)} phút ${secs % 60} giây`
+      : secs < 86400 ? `${Math.floor(secs / 3600)} giờ ${Math.floor((secs % 3600) / 60)} phút`
+      : `${(secs / 86400).toFixed(1)} ngày`;
+    setText('w3TimeLeft', secs === 0 ? 'Đã hết hạn' : remaining);
     setText('w3MyPledge', `${ethers.formatEther(myPledge)} ETH`);
 
     const balEl = document.getElementById('w3WalletBalance');
@@ -1182,7 +1186,7 @@ async function refreshOnChainState() {
     const hintEl = document.getElementById('web3ActionHint');
     if (hintEl) {
       if (st === 0) {
-        hintEl.textContent = `Chiến dịch đang mở. Ví của bạn đã góp ${ethers.formatEther(myPledge)} ETH.${myPledge > 0n ? ' Bạn có thể đóng góp thêm hoặc rút lại toàn bộ khoản góp.' : ' Bạn có thể nhập số ETH và bấm Đóng góp.'}`;
+        hintEl.textContent = `Chiến dịch đang mở. Ví của bạn đã góp ${ethers.formatEther(myPledge)} ETH.${myPledge > 0n ? ' Nhập số ETH để góp thêm hoặc rút trước hạn (không vượt khoản đã góp). MAX dùng số dư ví để góp, không phải số tối đa được rút.' : ' Bạn có thể nhập số ETH và bấm Đóng góp.'}`;
       } else if (st === 1) {
         hintEl.textContent = isCreator ? 'Mục tiêu đã đạt. Bạn là chủ dự án: Bấm "Giải ngân" để chuyển quỹ về ví.' : 'Chiến dịch thành công. Toàn bộ quỹ thuộc quyền giải ngân của chủ dự án.';
       } else if (st === 2) {
@@ -1256,10 +1260,19 @@ async function web3Pledge() {
 }
 
 async function web3Unpledge() {
-  await submitWeb3Transaction('btnW3Unpledge', 'Rút lại toàn bộ khoản góp', async (c, address) => {
+  if (!web3RequireConnected()) return;
+  let wei;
+  try {
+    wei = ethers.parseEther(document.getElementById('web3PledgeAmount').value.trim());
+    if (wei <= 0n) throw new Error('Số ETH phải lớn hơn 0.');
+  } catch (err) {
+    notify('error', 'Nhập số ETH muốn rút lớn hơn 0, tối đa 18 chữ số thập phân.');
+    return;
+  }
+  await submitWeb3Transaction('btnW3Unpledge', `Rút trước hạn ${ethers.formatEther(wei)} ETH`, async (c, address) => {
     const mine = await c.pledgedAmount(address);
-    if (mine === 0n) throw new Error('Ví này không có khoản góp nào để rút lại.');
-    return c.unpledge(mine);
+    if (wei > mine) throw new Error(`Số ETH muốn rút vượt khoản đã góp (${ethers.formatEther(mine)} ETH).`);
+    return c.unpledge(wei);
   });
 }
 

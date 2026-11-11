@@ -2,7 +2,7 @@
 
 ## 1. Phạm vi và cách tái lập
 
-- **Ngày chạy:** 2026-11-08.
+- **Ngày chạy:** 2026-11-11 (chạy lại sau chỉnh comment; raw output/source mapping và hash được cập nhật cùng nhau).
 - **Slither:** 0.11.6.
 - **Compiler:** solc `0.8.20+commit.a1b79de6.Windows.msvc`.
 
@@ -23,7 +23,7 @@ SHA-256 của source được phân tích (bao gồm comment; sửa file sẽ l�
 
 ```text
 contracts/Crowdfunding.sol
-ffe0bc39208681be40bffeaaedacf262406420a17929960f1a9b10a6247423ef
+3f99ccaa27483432759b619247c4793c78d9bc6d85d3afc3cd59c3a5b7de9bbd
 contracts/CrowdfundingFactory.sol
 3dde7791b0ef67d893eab97ae2bb03584eb33faab0c1d31c3fc3c72df7cffd91
 ```

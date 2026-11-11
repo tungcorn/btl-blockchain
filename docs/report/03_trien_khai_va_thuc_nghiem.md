@@ -84,13 +84,13 @@ Sau [EIP-6780](https://eips.ethereum.org/EIPS/eip-6780), SELFDESTRUCT vẫn chuy
 ### 3.2.3. CrowdfundingFactory.sol
 [Factory](../../contracts/CrowdfundingFactory.sol) tạo campaign với **creator là người gọi factory**, không phải địa chỉ factory. Mỗi campaign có storage và số dư riêng. Factory giữ danh sách, tra cứu theo creator và phân trang `getCampaigns(offset, limit)` với `MAX_PAGE_SIZE = 100`.
 
-Test hiện có kiểm tra tạo campaign/event, phân trang, offset ngoài biên và độc lập. Test yêu cầu limit 150 trên danh sách chỉ có 5 campaign chưa tự nó chứng minh trả tối đa 100 khi có hơn 100 campaign; không gọi đây là coverage đầy đủ cho mọi tình huống phân trang.
+Test hiện có kiểm tra tạo campaign/event, phân trang, offset ngoài biên và độc lập. Test cap tạo 101 campaign, yêu cầu limit 150: trang đầu trả 100, offset 100 trả một địa chỉ còn lại và đối chiếu thứ tự với deployedCampaigns. Đây là bằng chứng cho cap ở trường hợp đã chạy, không phải coverage đầy đủ cho mọi tình huống phân trang.
 
 ---
 
 ## 3.3. Kiểm thử hai tầng và minh chứng theo thành viên
 
-**Kết quả lần chạy `npm test` ngày 2026-11-08: 18 test mô hình JavaScript + 41 test Hardhat EVM đạt, không có test thất bại.** Số lượng test không phải tỷ lệ statement/branch coverage.
+**Kết quả lần chạy `npm test` ngày 2026-11-11: 18 test mô hình JavaScript + 41 test Hardhat EVM đạt, không có test thất bại.** Số lượng test không phải tỷ lệ statement/branch coverage.
 
 * Tầng mô hình: `test/Crowdfunding.test.js` kiểm tra logic JavaScript, không biên dịch/thực thi Solidity.
 * Tầng EVM: `test/Crowdfunding.evm.test.js` chạy bytecode trên Hardhat Network cục bộ, solc 0.8.20, optimizer 200 runs. Đây không phải bằng chứng đã ký/broadcast giao dịch lên Sepolia.
@@ -104,27 +104,36 @@ Test hiện có kiểm tra tạo campaign/event, phân trang, offset ngoài biê
 | Thất bại/refund | Điều kiện thất bại, giảm sổ sách, hoàn hai lần, đủ goal đúng từng wei | Người gọi vẫn cần trả gas |
 | An toàn | Nested refund; forced ETH; sweep; rollback/retry ở unpledge/claim/refund/sweep; backer khác vẫn refund được | Các receiver/callback đã mô hình hóa |
 | Fuzz | 80 thao tác pledge/unpledge, 4 actor, seed `0xC0FFEE`; kiểm tra tổng mapping và balance | Chỉ còn hạn, không claim/refund/forced ETH; không phải bất biến toàn lifecycle |
-| Factory | Deploy, tra cứu/phân trang, độc lập campaign | Chưa kiểm tra limit cap trên hơn 100 campaign |
+| Factory | Deploy, tra cứu/phân trang, độc lập campaign; cap 100 trên danh sách 101 campaign | Không suy ra mọi đầu vào/chuỗi phân trang đều đã được kiểm tra |
 
 ### Ba test tiêu biểu mỗi thành viên
 Chạy từ thư mục repository; regex dưới chọn test hiện có theo tên:
 
 ```bash
-# TV1: rút một phần, rút hết/góp lại, chặn tại endAt — 3 test
-npx hardhat test test/Crowdfunding.evm.test.js --grep "Unpledge một phần|TV1:"
+# TV1: nhiều backer góp, rút một phần, chặn rút tại endAt — 3 test
+npx hardhat test test/Crowdfunding.evm.test.js --grep "Nhiều backer góp:|Unpledge một phần:|TV1: unpledge tại đúng endAt"
 
 # TV2: đủ vốn trước hạn, claim đúng endAt, sai quyền — 3 test
-npx hardhat test test/Crowdfunding.evm.test.js --grep "TV2:|Người lạ claim|claim hợp lệ TẠI"
+npx hardhat test test/Crowdfunding.evm.test.js --grep "TV2: đủ goal|Người lạ claim|claim hợp lệ TẠI"
 
-# TV3: rollback/cô lập lỗi, nested refund, forced ETH — 3 test
-npx hardhat test test/Crowdfunding.evm.test.js --grep "refund lỗi rollback|ReentrancyAttacker:|Forced ETH qua"
+# TV3: refund đúng khoản, chặn hoàn hai lần, rollback/cô lập lỗi — 3 test
+npx hardhat test test/Crowdfunding.evm.test.js --grep "Refund đúng 100%|Refund hai lần|TV3: refund lỗi rollback"
 ```
 
 | Người trình bày | Bảng trước → sau cần giải thích |
 | :--- | :--- |
-| TV1 | Góp 3, rút 1: khoản cá nhân 3 → 2, pledged giảm 1, bộ đếm giữ nguyên. Rút toàn bộ: khoản về 0 và bộ đếm giảm; góp lại tăng bộ đếm. |
-| TV2 | Đủ goal tại endAt − 1: Active, claimed false, quỹ chưa chuyển. Tại endAt: creator claim được; sau claim claimed true, balance 0, sổ sách góp vẫn còn. |
-| TV3 | Receiver từ chối refund: mapping/pledged/balance không mất; backer khác vẫn refund được. Khi receiver chấp nhận ETH, retry hoàn khoản hợp lệ. |
+| TV1 | Nhiều backer: tổng pledged bằng tổng khoản ghi nhận. Góp 3, rút 1: khoản cá nhân 3 → 2, pledged giảm 1, bộ đếm giữ nguyên. Rút tại endAt bị chặn, sổ sách giữ nguyên. |
+| TV2 | Đủ goal tại endAt − 1: Active, claimed false, quỹ chưa chuyển. Tại endAt: creator claim được; sau claim claimed true, balance 0, sổ sách góp vẫn còn. Người lạ không được claim. |
+| TV3 | Refund thành công đưa khoản cá nhân về 0 và giảm pledged; hoàn lần hai bị chặn. Receiver từ chối refund: mapping/pledged/balance không mất; backer khác vẫn refund được; receiver chấp nhận ETH thì retry được. |
+
+**Trách nhiệm kiểm thử sâu theo luồng:** TV1 giải thích thêm rút hết/góp lại và unpledge lỗi rollback/retry; TV2 giải thích thêm claim lỗi rollback `claimed`, giữ quỹ và retry. TV3 phụ trách refund/sweep lỗi, nested refund, forced ETH, phạm vi fuzz và triage Slither; rà chéo cơ chế CEI/guard nhưng không nhận thay phần lỗi unpledge/claim. Nhãn TV trong tên test thể hiện trách nhiệm chuẩn bị, không phải bằng chứng tác giả lịch sử.
+
+```bash
+# Hai test rollback/retry do TV1 và TV2 phụ trách, ngoài bộ ba chính
+npx hardhat test test/Crowdfunding.evm.test.js --grep "TV1: unpledge lỗi rollback|TV2: claim lỗi rollback"
+```
+
+Trong lượt trình bày 3–4 phút/người, dùng một luồng demo, điều kiện Solidity và bảng trước/sau. Chuẩn bị sẵn kết quả ba test để đối chiếu; không bắt buộc chạy cả ba trực tiếp. Các test sâu và factory/forced ETH/fuzz/Slither dùng khi được hỏi.
 
 **Giới hạn kết luận:** các test xác nhận những kịch bản được thực thi, chưa có số liệu coverage để nói bao phủ 100% custom errors/branches. Chưa kiểm chứng mọi seed, mọi kiểu callback hay toàn bộ vòng đời trong fuzz. Không suy ra an toàn tuyệt đối.
 
@@ -153,4 +162,6 @@ Người dùng nhập địa chỉ campaign, kết nối ví trên mạng hỗ t
 
 Mỗi giao dịch ghi hash, trạng thái chờ và receipt/block khi xác nhận; đọc RPC cập nhật state riêng, không thay thế lịch sử giao dịch. Lịch sử chỉ giữ các giao dịch gần nhất trong phiên. Đổi account cần gắn lại signer; lỗi RPC phải được phân biệt với giao dịch revert.
 
-**Mức xác minh:** browser regression với provider/contract giả lập không phải ký/broadcast MetaMask thật. Chỉ ghi kết quả thực nghiệm Sepolia khi đã có chain ID, địa chỉ, hash và receipt. Nếu demo trực tiếp gặp lỗi mạng/ví, dùng test EVM cục bộ làm phương án dự phòng và nói rõ môi trường; không trình bày log sandbox như chứng cứ on-chain.
+Connector dùng chung ô ETH cho góp và rút trước hạn, gửi `unpledge(amount)` theo số đã nhập, không mặc định rút toàn bộ. Chặn số không hợp lệ và khoản vượt mapping đọc từ contract; kiểm tra Solidity vẫn là lớp thực thi quyết định. MAX điền số dư ví để góp, không phải số tối đa được rút.
+
+**Mức xác minh:** browser regression với provider/contract giả lập không phải ký/broadcast MetaMask thật. Lần chạy 2026-11-11 bổ sung script RPC trên node Hardhat local với receipt/state trước-sau thật, nhưng dùng tài khoản test mở khóa, không phải MetaMask ký. Xem [phụ lục minh chứng](06_doi_chieu_va_minh_chung.md) và [quy trình local/MetaMask](../local-demo.md). Chỉ ghi kết quả Sepolia khi có chain ID, địa chỉ, hash và receipt tương ứng. Nếu demo gặp lỗi mạng/ví, dùng test EVM/JSON đã lưu và sandbox để minh họa, nói rõ môi trường.

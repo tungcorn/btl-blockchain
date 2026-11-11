@@ -1,80 +1,47 @@
 ---
 name: solidity-smart-contract-audit
-description: Chuẩn mực bảo mật, kiến trúc và kiểm toán hợp đồng thông minh Solidity (0.8+) cho đồ án Crowdfunding. Hướng dẫn áp dụng mẫu CEI (Checks-Effects-Interactions), ReentrancyGuard, cơ chế rút tiền an toàn Pull-over-Push, đặc tả bất biến toán học (Storage Invariants) và khả năng chống chịu tấn công Forced ETH.
+description: Rà soát có phạm vi cho Crowdfunding: điều kiện nghiệp vụ, CEI/guard, accounting, receiver lỗi và giới hạn test/phân tích tĩnh. Không phải chứng nhận audit độc lập.
 ---
 
-# Solidity Smart Contract Security & Audit Guidelines
+# Rà soát Solidity theo bằng chứng
 
-Hướng dẫn quy chuẩn kỹ thuật và kiểm toán chuyên sâu dành cho **Hợp đồng thông minh Gây quỹ cộng đồng (Crowdfunding Smart Contract)** có Mục tiêu (Goal) và Thời hạn (Deadline).
+Đọc source và test hiện tại trước khi kết luận; không lấy checklist làm bằng chứng tính đúng. Đây là hướng dẫn nội bộ, không phải audit độc lập.
 
----
+## 1. Điều kiện nghiệp vụ
 
-## 1. Các Quy Tắc Bảo Mật Bắt Buộc (Mandatory Security Rules)
+- Constructor: goal dương; duration 1 giây đến 365 ngày; creator truyền vào hoặc deployer nếu địa chỉ 0.
+- Trước endAt: pledge/receive/unpledge; đủ goal sớm vẫn Active.
+- Tại/sau endAt: chỉ creator claim khi pledged >= goal và chưa claimed; refund khi pledged < goal và khoản của người gọi dương.
+- State được tính khi đọc, không tự ghi storage hoặc tự chuyển tiền ở deadline.
+- Sweep chỉ creator, có guard, chỉ chuyển phần chênh balance - pledged khi dương; không yêu cầu hết hạn.
 
-### 1.1. Mẫu Checks-Effects-Interactions (CEI Pattern)
-Mọi hàm thay đổi trạng thái và thực hiện chuyển tiền (chuyển ETH/Token) **BẮT BUỘC** tuân thủ thứ tự:
-1. **Checks**: Kiểm tra điều kiện tiên quyết (ví dụ: `require` hoặc `if (...) revert CustomError()`).
-2. **Effects**: Cập nhật toàn bộ biến trạng thái nội bộ TRƯỚC (ví dụ: gán `claimed = true`, đặt `pledgedAmount[msg.sender] = 0`).
-3. **Interactions**: Thực hiện lời gọi ra bên ngoài cuối cùng (`(bool sent, ) = recipient.call{value: amount}("")`).
+## 2. Accounting và phạm vi bất biến
 
-### 1.2. Mẫu Hoàn Tiền Chủ Động: Pull over Push (Chống DoS)
-- **CẤM TUYỆT ĐỐI**: Dùng vòng lặp `for/while` lặp qua mảng toàn bộ người đóng góp để tự động chuyển tiền trả lại (`Push payment`). Nếu 1 người đóng góp là contract độc hại cố tình revert trong hàm `receive()`, toàn bộ giao dịch refund của dự án sẽ sụp đổ (Denial of Service).
-- **QUY CHUẨN BẮT BUỘC**: Sử dụng mẫu **Pull payment** (`claimRefund()` hoặc `refund()`). Từng người đóng góp tự chủ động gọi hàm để rút phần đóng góp của chính mình.
+- Sau giao dịch hoàn tất: `pledged == sum(pledgedAmount)` trên toàn bộ backer; mapping không liệt kê được trực tiếp nên test phải biết tập actor.
+- Khi **chưa claimed**, balance phải đủ thanh toán các khoản ghi nhận theo thiết kế: `balance >= pledged`. Không dùng bất đẳng thức này làm bất biến toàn lifecycle: claim giữ pledged/mapping nhưng chuyển balance.
+- `balance == pledged` chỉ đúng trong phạm vi không có forced ETH và chưa claim; forced ETH không làm tăng quyền refund hoặc tự giúp đạt goal.
+- Nhánh trạng thái: Active → Successful → Claimed, hoặc Active → Failed; Failed không chuyển sang Claimed. Refund giảm pledged trong nhánh Failed.
+- contributorCount giảm khi unpledge toàn bộ, tăng khi góp từ khoản bằng 0, không giảm khi refund. Không gọi nó là số backer chưa refund hoặc số người từng góp trong toàn lịch sử.
 
-### 1.3. Khóa Tái Nhập (Reentrancy Guard)
-- Sử dụng modifier `nonReentrant` trên toàn bộ các hàm có tương tác chuyển ETH (`claim()`, `refund()`, `unpledge()`).
-- Ngăn chặn triệt để cả tấn công tái nhập đơn hàm (Single-function Reentrancy) và tái nhập chéo hàm (Cross-function Reentrancy).
+## 3. External call và rollback
 
-### 1.4. Tối Ưu Gas Với Custom Errors
-- Không dùng chuỗi ký tự dài dòng trong `require(condition, "Very long revert string")`.
-- Định nghĩa Custom Errors ở đầu contract (ví dụ: `error GoalNotReached()`, `error CampaignActive()`, `error ZeroPledge()`).
-- Tiết kiệm gas triển khai bytecode và gas thực thi runtime, đồng thời hỗ trợ frontend giải mã 4-byte selector chính xác sang tiếng Việt.
+- Unpledge/refund cập nhật accounting trước call; claim đặt claimed trước call; sweep tính phần dư nhưng không giảm pledged.
+- Các hàm chuyển ETH dùng guard **tự cài đặt**, kiểm tra success và revert TransferFailed khi lỗi. Guard không phải khóa đa luồng hoặc bằng chứng loại bỏ mọi cross-function reentrancy.
+- Pledge/receive không có external call và không có guard. Callback góp lại trong unpledge trước hạn cần được xét theo điều kiện pledge; trong refund/claim đã hết hạn nên pledge bị CampaignEnded.
+- Pull refund tránh gộp lỗi receiver vào cùng giao dịch của tất cả backer. Receiver từ chối ETH vẫn có thể không nhận được phần của họ.
+- Test phải đối chiếu mapping/tổng/bộ đếm hoặc claimed/balance sau lỗi, rồi retry khi receiver chấp nhận; không chỉ kiểm tra có revert.
 
----
+## 4. Forced ETH, thời gian và gas
 
-## 2. Đặc Tả Bất Biến Toán Học (Mathematical Storage Invariants)
+- EIP-6780 vẫn cho SELFDESTRUCT chuyển ETH từ contract cũ; ngoại lệ cùng transaction liên quan xóa code/storage/account.
+- Claim lấy balance thực tế lúc claim; refund theo mapping. Sweep không thu hồi được mọi khoản ETH gửi sau claim vì accounting vẫn còn.
+- Ethereum PoS timestamp theo slot, không tùy chỉnh ±15 giây; không bảo đảm đưa giao dịch sát hạn vào block.
+- Không suy ra gas tiết kiệm cố định từ immutable/custom errors/guard. Nêu cấu hình và đo đối chứng nếu công bố con số.
 
-Trước hội đồng chấm thi, hợp đồng phải chứng minh được tính đúng đắn toán học qua 3 bất biến lưu trữ:
+## 5. Kiểm chứng và báo cáo
 
-### Invariant 1: Bất biến Bảo toàn Vốn (Conservation of Funds)
-$$\text{pledged} = \sum_{i=1}^{N} \text{pledgedAmount}[\text{backer}_i]$$
-*Ý nghĩa:* Tổng số tiền contract ghi nhận luôn bằng chính xác tổng các khoản đóng góp riêng lẻ của từng backer. Không có wei nào tự nhiên sinh ra hoặc mất đi trong sổ cái kế toán.
-
-### Invariant 2: Bất biến Khả năng Thanh khoản (Solvency Invariant)
-$$\text{address}(\text{this}).\text{balance} \ge \text{pledged}$$
-*Ý nghĩa:* Số dư ETH thực tế của hợp đồng luôn lớn hơn hoặc bằng tổng số tiền đã đóng góp chưa giải ngân. Đảm bảo hợp đồng luôn đủ khả năng thanh toán 100% cho toàn bộ backers khi hoàn tiền.
-
-### Invariant 3: Máy Trạng Thái Bất Khả Hoàn Tác (State Machine Monotonicity)
-$$\text{State}: \text{Active} \longrightarrow \{\text{Successful}, \text{Failed}\} \longrightarrow \text{Claimed}$$
-- Khi thời gian còn hạn (`block.timestamp < endAt`): Trạng thái là `Active`.
-- Khi đã hết hạn (`block.timestamp >= endAt`):
-  - Nếu `pledged >= goal`: Chuyển sang `Successful`.
-  - Nếu `pledged < goal`: Chuyển sang `Failed`.
-- Trạng thái đã sang `Successful` hoặc `Failed` thì **không thể quay lại `Active`**.
-
----
-
-## 3. Khả Năng Phòng Thủ Các Tình Huống Biên (Edge Cases & Resilience)
-
-### 3.1. Biên Thời Gian Tuyệt Đối (`block.timestamp == endAt`)
-- Đóng cổng góp vốn chính xác tại giây `endAt`: Điều kiện đóng góp là `block.timestamp < endAt`.
-- Mở cổng kết toán chính xác tại giây `endAt`: Điều kiện kết toán là `block.timestamp >= endAt`.
-- Không có khoảng trống thời gian vô định nào giữa 2 trạng thái.
-
-### 3.2. Chống Tấn Công Bơm ETH Cưỡng Bức (Forced ETH via selfdestruct)
-- Kẻ tấn công có thể ép ETH vào contract thông qua opcode `selfdestruct` của một contract phụ hoặc `coinbase transfer`.
-- Khi đó: `address(this).balance > pledged`.
-- **Giải pháp**:
-  - Khi hoàn tiền (`refund`): Hoàn đúng số tiền đã ghi nhận `pledgedAmount[msg.sender]`, không đọc trực tiếp từ `balance`.
-  - Khi giải ngân (`claim`): Chủ dự án có thể rút toàn bộ quỹ hoặc hợp đồng trang bị hàm `sweepExcessEther()` chỉ cho phép Creator rút phần ETH dư ngoài ý muốn sau khi chiến dịch đã hoàn tất an toàn.
-
----
-
-## 4. Checklist Tự Kiểm Toán Trước Buổi Bảo Vệ (Self-Audit Checklist)
-
-- [ ] Toàn bộ hàm chuyển ETH có modifier `nonReentrant` chưa?
-- [ ] Mọi cập nhật số dư lưu trữ đã nằm TRƯỚC dòng lệnh `.call{value: ...}("")` chưa?
-- [ ] Giá trị trả về `(bool sent, )` có được kiểm tra `if (!sent) revert TransferFailed()` không?
-- [ ] Có tồn tại vòng lặp vô hạn nào duyệt qua danh sách người đóng góp không?
-- [ ] Đã có test case mô phỏng contract tấn công Reentrancy cố ý gọi lại chưa?
-- [ ] Đã có test case kiểm thử đúng giây `endAt` chưa?
+- Chạy test phù hợp với diff; kết quả model JavaScript khác test EVM. Fuzz hữu hạn và seed cố định không phải chứng minh hình thức.
+- Kiểm tra cap factory với hơn MAX_PAGE_SIZE campaign, không chỉ yêu cầu limit lớn trên danh sách ngắn.
+- Slither: giữ nguyên severity; ghi version/compiler/scope/source hash và raw JSON. Dependency findings có thể trùng giữa hai lượt; không cộng thành lỗi độc lập.
+- Sửa source kể cả comment làm thay đổi hash và source mapping: chạy lại hai lượt Slither hoặc ghi rõ output cũ không còn khớp source; không chỉ thay hash trong báo cáo.
+- Không đổi logic production, compiler hoặc dependency chỉ để che cảnh báo nếu chưa có lý do và kiểm chứng.

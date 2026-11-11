@@ -470,7 +470,7 @@
         <div class="web3-header-row">
           <div>
             <div class="campaign-subtag">Tương tác on-chain thật</div>
-            <h2 class="web3-main-title">Kết nối MetaMask · Sepolia Testnet</h2>
+            <h2 class="web3-main-title">Kết nối MetaMask · Local / Sepolia</h2>
             <p class="web3-sub-desc">
               Kết nối ví và hợp đồng trên Sepolia hoặc mạng cục bộ. Mỗi giao dịch cần bạn xác nhận trong MetaMask.
             </p>
@@ -515,13 +515,13 @@
           <!-- Cụm nhập số ETH đóng góp On-chain độc lập -->
           <div class="web3-pledge-box">
             <div class="web3-pledge-header">
-              <label class="web3-label" for="web3PledgeAmount">Số ETH muốn đóng góp on-chain</label>
+              <label class="web3-label" for="web3PledgeAmount">Số ETH góp / rút trước hạn</label>
               <span class="web3-balance-note" id="w3WalletBalance">Số dư ví: —</span>
             </div>
             <div class="web3-input-row">
               <div class="input-currency-wrapper">
-                <input type="number" id="web3PledgeAmount" min="0.01" step="0.1" value="0.1"
-                       class="clean-num-input" placeholder="0.1" aria-label="Số ETH đóng góp on-chain">
+                <input type="number" id="web3PledgeAmount" min="0" step="any" value="0.1"
+                       class="clean-num-input" placeholder="0.1" aria-label="Số ETH đóng góp hoặc rút trước hạn">
                 <span class="input-currency-unit">ETH</span>
               </div>
               <div class="preset-chips">
@@ -540,7 +540,7 @@
                 <path d="M12 19V5M5 12l7-7 7 7"/>
               </svg>
             </button>
-            <button id="btnW3Unpledge" class="btn btn-secondary" onclick="web3Unpledge()" disabled>Rút lại toàn bộ</button>
+            <button id="btnW3Unpledge" class="btn btn-secondary" onclick="web3Unpledge()" disabled>Rút số đã nhập</button>
             <button id="btnW3Claim" class="btn btn-claim" onclick="web3Claim()" disabled>Giải ngân</button>
             <button id="btnW3Refund" class="btn btn-refund" onclick="web3Refund()" disabled>Nhận hoàn tiền</button>
             <button id="btnW3Refresh" class="btn btn-secondary" onclick="refreshOnChainState()" disabled title="Đọc lại dữ liệu mới nhất từ RPC Node">

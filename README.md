@@ -25,7 +25,7 @@ npm run test:evm      # 41 Hardhat EVM tests
 npm run test:coverage # optional coverage measurement; not a claimed 100% result
 ```
 
-Verified on 2026-11-08: **18 model + 41 EVM tests pass**. Hardhat also discovers the model test file, so its console output appears again during the EVM command; this is not another 18 distinct tests.
+Verified on 2026-11-11: **18 model + 41 EVM tests pass**. Hardhat also discovers the model test file, so its console output appears again during the EVM command; this is not another 18 distinct tests.
 
 The EVM suite checks core flows, deadline/authorization boundaries, full withdrawal/re-pledging, transfer-failure rollback/retry, nested refund, forced ETH, and selected factory behavior. Its deterministic fuzz covers 80 active-period pledge/unpledge operations with four actors and seed `0xC0FFEE`; `balance == pledged` is checked only in that scope, not after claim or forced ETH. Test counts do not establish full statement/branch/custom-error coverage.
 
@@ -42,7 +42,20 @@ slither contracts/CrowdfundingFactory.sol --solc solc
 
 The recorded run uses Slither 0.11.6 and solc 0.8.20: **0 High/Medium**, 13 result instances for Crowdfunding and 16 for Factory including its dependency. There are four detector categories, not four findings; the runs overlap and must not be summed as independent issues. See [raw JSON, source hashes and triage](docs/security/slither-report.md). Static analysis is not an audit or a security guarantee.
 
-### 4. CLI simulation
+### 4. Reproducible local EVM demo
+
+```bash
+npm ci
+npm run demo:node      # terminal 1: loopback RPC, chain ID 31337
+npm run demo:deploy    # terminal 2: two fresh campaigns, 0.01 ETH goal / 600 seconds
+npm run demo:evidence  # optional: fresh pair, automated RPC receipts and state snapshots
+```
+
+Keep the node running. `demo:evidence` advances time for the entire local node; run it before preparing fresh campaigns for manual wallet use. Scripts only target the configured localhost RPC/chain and use public, unlocked test accounts. Never fund these accounts on a real network. Recorded local receipts do **not** demonstrate a MetaMask signature or Sepolia broadcast. See [wallet walkthrough and failure handling](docs/local-demo.md) and [actual evidence/requirements matrix](docs/report/06_doi_chieu_va_minh_chung.md).
+
+The Web3 amount field supports contributions and partial/full pre-deadline withdrawals; MAX fills a contribution amount from wallet balance, not the recorded withdrawable pledge.
+
+### 5. CLI simulation
 
 ```bash
 npm run simulate
@@ -107,14 +120,16 @@ Test helpers are not production wallets or deployment targets. `RejectingReceive
 
 ## Group responsibilities — 3 members
 
-Each member owns Solidity reasoning, relevant tests, report content, demo and oral defense for one Blockchain flow:
+This is a division of **oral-defense arguments for one shared product**, not independent development modules. Preparation includes code reasoning, tests and report evidence; the main presentation is narrower:
 
-| Member | Required core | Advanced follow-up |
+| Member | Core argument to demonstrate | Advanced preparation |
 | --- | --- | --- |
-| 1 | Contributions/early withdrawal: `pledge`, `unpledge`, ETH/wei and mapping | `receive`, events and contributor counting |
-| 2 | Goal/deadline/state, creator permission and `claim` | Factory, pagination and gas choices |
-| 3 | `refund`, CEI, guard, rollback and refund isolation | Forced ETH, sweep, fuzz and Slither |
+| 1 — Contributions and early-withdrawal rights | Receiving ETH is not enough: per-backer mapping and total pledges must stay consistent during pledge/unpledge. Explain caller rights, a rejected withdrawal and rollback, not just Solidity syntax. | `receive`, full withdrawal/re-entry, contributor counting and detailed unpledge rollback/retry tests |
+| 2 — Successful settlement conditions | Reaching the goal is not enough: claim also requires expiry, the creator and no prior claim. Compare state, balance and accounting before/after. | Claim rollback/retry, factory/pagination, gas choices and detailed Web3 integration |
+| 3 — Failed-campaign refunds without incorrect repayment | Refund the caller's recorded amount once; explain CEI, guard, rollback and separate backer transactions through the refund code, not a general security lecture. | Nested refund, forced ETH, sweep, fuzz and Slither as shared project evidence, with member 3 coordinating deeper preparation |
 
-Web3, UI and slides are shared supporting work, not any member's only technical topic. Each person prepares a before/after table and three representative EVM tests. This is a responsibility plan, not a claim of historical code authorship or verified contribution percentages.
+Web3/gas/receipts and the complete funds lifecycle are common knowledge; UI and slides are supporting work, not anyone's only topic. Member 2 coordinates integration without presenting the entire Web3 stack in the main slot. Security is shared: members 1 and 2 explain failure/rollback in their own flows, not delegate all difficult questions to member 3.
 
-See [the detailed assignment and defense checklist](docs/group_report.md).
+Each speaker follows **rule → design decision → valid/rejected case → before/after evidence**. Cross-review follows 1 → 2 → 3 → 1. Prepare a before/after table and three representative EVM tests, with results ready rather than running everything in a suggested 3–4 minute slot. Rehearse without reading slides, predict changes to caller/amount/time, and answer one cross-flow question; record gaps and retry results in the defense checklist. Equal slide/function/test counts do not establish balance or readiness. Each member supplies their results/limitations; member 3 consolidates. The plan does not establish historical authorship or contribution percentages.
+
+See [the detailed assignment and defense checklist](docs/group_report.md), [nine-slide speaking content](docs/defense-slides.md), [references](docs/report/05_tai_lieu_tham_khao.md) and [requirements/evidence appendix](docs/report/06_doi_chieu_va_minh_chung.md). Names/student IDs, final document export and manual-wallet verification remain group sign-off tasks, not automatically completed by this plan.
