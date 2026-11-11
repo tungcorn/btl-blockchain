@@ -169,7 +169,7 @@ sequenceDiagram
     end
 
     Note over Clock,Contract: Giai đoạn 3: Hết hạn thời gian (EndAt)
-    Clock->>Contract: block.timestamp >= endAt
+    Note over Clock,Contract: Khi xử lý call/transaction: so sánh timestamp của block với endAt; không có Clock gửi giao dịch tự động
 
     alt Trường hợp A: Đạt mục tiêu (pledged >= goal)
         Creator->>Contract: claim()
@@ -240,7 +240,7 @@ npx serve demo
 ### 4.3. Triển khai lên Mạng Testnet Sepolia qua Remix IDE
 1. Mở [Remix Ethereum IDE](https://remix.ethereum.org/).
 2. Tạo file `Crowdfunding.sol` và dán mã nguồn từ thư mục `contracts/Crowdfunding.sol`.
-3. Chọn Compiler phiên bản `0.8.20` hoặc cao hơn. Nhấn **Compile Crowdfunding.sol**.
+3. Chọn Compiler `0.8.20`, optimizer bật với `200 runs` để tái lập cấu hình kiểm thử. Ghi lại EVM target/settings thực tế của Remix; không mặc định kết quả tương đương nếu đổi compiler/settings. Nhấn **Compile Crowdfunding.sol**.
 4. Chuyển sang tab **Deploy & Run Transactions**:
    - Environment: Chọn **Injected Provider - MetaMask** (chọn mạng **Sepolia**).
    - Tham số khởi tạo `constructor`:
@@ -288,11 +288,11 @@ Các câu hỏi dưới giúp luyện giải thích code và giới hạn của 
 #### Câu 8: `immutable` khác `constant` như thế nào trong hợp đồng này?
 > **Trả lời:**
 > - `constant` phải được gán giá trị cố định ngay tại thời điểm biên dịch mã nguồn (compile-time).
-> - `immutable` cho phép gán giá trị một lần duy nhất trong `constructor` lúc triển khai hợp đồng (runtime), và sau đó được ghi trực tiếp vào bytecode thay vì tốn slot lưu trữ trên `storage` (SSTORE/SLOAD). Nhóm dùng `immutable` cho `creator`, `goal`, `startAt`, `endAt` để tiết kiệm gas đọc biến tối đa.
+> - `immutable` cho phép gán giá trị một lần duy nhất trong `constructor` lúc triển khai hợp đồng (runtime), và sau đó được ghi trực tiếp vào bytecode thay vì tốn slot lưu trữ trên `storage` (SSTORE/SLOAD). Nhóm dùng `immutable` cho `creator`, `goal`, `startAt`, `endAt` để tránh đọc các giá trị này từ storage; mức cải thiện cần benchmark đối chứng, không khẳng định tối ưu tuyệt đối.
 
 #### Câu 9: Vai trò của `CrowdfundingFactory.sol` là gì?
 > **Trả lời:**
-> Áp dụng Factory Pattern giúp hệ thống mở rộng từ một chiến dịch đơn lẻ thành một nền tảng bệ phóng (Launchpad) hoàn chỉnh. Bất kỳ ai cũng có thể gọi `createCampaign()` để triển khai một hợp đồng Crowdfunding độc lập, có thể tra cứu danh sách chiến dịch theo người tạo hoặc phân trang danh sách cho giao diện Web3.
+> Factory Pattern bổ sung khả năng tạo và tra cứu nhiều campaign độc lập; không đồng nghĩa đã có một launchpad production hoàn chỉnh. Bất kỳ ai cũng có thể gọi `createCampaign()` để triển khai một hợp đồng Crowdfunding độc lập, có thể tra cứu danh sách chiến dịch theo người tạo hoặc phân trang danh sách cho giao diện Web3.
 
 #### Câu 10: Quy trình ký giao dịch và gửi lên mạng từ Web DApp diễn ra như thế nào?
 > **Trả lời:**
@@ -303,5 +303,6 @@ Các câu hỏi dưới giúp luyện giải thích code và giới hạn của 
 ## 6. KẾT LUẬN VÀ ĐÁNH GIÁ
 
 * Đề tài triển khai các luồng góp vốn, rút trước hạn, giải ngân và hoàn tiền; mỗi thành viên có phần Solidity, test và báo cáo để giải thích.
-* Lần chạy npm test ngày 2026-11-08 đạt 18 test mô hình và 41 test EVM. Hai lượt Slither production không báo High/Medium, có Low/Informational được ghi trong raw JSON. Kết quả không xác nhận coverage 100%, audit độc lập hay an toàn tuyệt đối.
-* Sandbox là minh họa JavaScript, CLI là mô hình, Hardhat là EVM cục bộ. Khi trình bày giao dịch trên mạng kết nối phải có địa chỉ/chain ID, hash và receipt thực tế. Hiện không lấy kết quả provider giả lập làm bằng chứng ký/broadcast MetaMask thật.
+* Lần chạy npm test ngày 2026-11-11 đạt 18 test mô hình và 41 test EVM; test cap factory dùng 101 campaign. Hai lượt Slither production không báo High/Medium, có Low/Informational được ghi trong raw JSON. Kết quả không xác nhận coverage 100%, audit độc lập hay an toàn tuyệt đối.
+* Sandbox là minh họa JavaScript, CLI là mô hình, Hardhat là EVM cục bộ. [Phụ lục](report/06_doi_chieu_va_minh_chung.md) ghi receipt/state trước-sau từ script RPC local; không lấy chúng hoặc provider giả lập làm bằng chứng MetaMask ký/Sepolia.
+* Chuẩn bị trình bày bằng [nội dung 9 slide](defense-slides.md), [hướng dẫn local](local-demo.md) và [tài liệu tham khảo](report/05_tai_lieu_tham_khao.md). Nhóm còn cần điền thông tin bìa, xác nhận ví thủ công và xuất bản nộp theo rubric thực tế.

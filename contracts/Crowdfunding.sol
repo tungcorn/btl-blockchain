@@ -74,7 +74,9 @@ contract Crowdfunding {
     /// @notice Mapping of backer address to their contributed amount in wei
     mapping(address => uint256) public pledgedAmount;
 
-    /// @notice Total number of unique contributors
+    /// @notice Addresses with positive recorded pledges during the active phase
+    /// @dev Full unpledge decrements this count; refund does not. Not an all-time
+    ///      unique-backer count or a count of unrefunded backers after failure.
     uint256 public contributorCount;
 
     // =============================================================
@@ -86,13 +88,13 @@ contract Crowdfunding {
     }
 
     /**
-     * @dev Defense-in-depth mutex, mirroring OpenZeppelin's ReentrancyGuard.
-     *      Why not OpenZeppelin 5.x transient storage (EIP-1153 TSTORE/TLOAD)?
-     *      Kept storage-based for maximal compatibility with pre-Cancun EVMs;
-     *      on Cancun+ networks the SSTORE pair costs ~5,800 gas vs ~200 for TSTORE.
-     *      Applied ONLY to functions that perform external calls (unpledge, claim,
-     *      refund, sweep). pledge()/receive() make no external calls, so CEI alone
-     *      is sufficient there (see pledge() docs).
+     * @dev Custom storage-based defense-in-depth mutex; not an OpenZeppelin import.
+     *      Does not require transient storage (EIP-1153), allowing pre-Cancun EVMs.
+     *      Gas costs depend on compiled code and storage access; no fixed saving
+     *      is claimed without a controlled benchmark. Applied to functions that
+     *      transfer ETH (unpledge, claim, refund, sweep). The unguarded pledge and
+     *      receive entry points perform no external calls; this modifier does not
+     *      imply that every cross-function callback is rejected.
      */
     modifier nonReentrant() {
         if (_reentrancyStatus == 2) revert ReentrancyGuardTriggered();
@@ -133,12 +135,12 @@ contract Crowdfunding {
 
     /**
      * @notice Pledge ETH to the campaign while it is active
-     * @dev Deliberately WITHOUT nonReentrant: this function performs NO external
-     *      calls, so Checks-Effects-Interactions alone is sufficient. Adding the
-     *      guard would (1) waste ~5,800 gas (two SSTOREs) per call, and (2) create
-     *      a griefing corner case: a backer contract whose receive() auto-pledges
-     *      would have every refund()/claim() transfer revert (guard still engaged
-     *      during the ETH delivery call).
+     * @dev No external calls are made here, so this entry point omits the guard.
+     *      A receiver may call pledge during a pre-deadline unpledge callback;
+     *      the new contribution is accounted for under the ordinary pledge rules.
+     *      During claim/refund callbacks the deadline has already been reached,
+     *      so pledge reverts CampaignEnded regardless of guard placement.
+     *      No fixed gas saving or universal callback-safety claim is implied.
      */
     function pledge() external payable {
         if (block.timestamp >= endAt) revert CampaignEnded();

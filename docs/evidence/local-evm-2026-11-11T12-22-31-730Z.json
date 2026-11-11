@@ -1,0 +1,233 @@
+{
+  "recordedAt": "2026-11-11T12:22:31.730Z",
+  "environment": "Hardhat localhost",
+  "chainId": 31337,
+  "authorization": "Unlocked local test accounts via ethers; no MetaMask signature; not Sepolia",
+  "hardhatVersion": "2.29.1",
+  "compiler": {
+    "version": "0.8.20",
+    "settings": {
+      "optimizer": {
+        "enabled": true,
+        "runs": 200
+      },
+      "evmVersion": "paris",
+      "outputSelection": {
+        "*": {
+          "*": [
+            "abi",
+            "evm.bytecode",
+            "evm.deployedBytecode",
+            "evm.methodIdentifiers",
+            "metadata"
+          ],
+          "": [
+            "ast"
+          ]
+        }
+      }
+    }
+  },
+  "sourceSha256": {
+    "contracts/Crowdfunding.sol": "3f99ccaa27483432759b619247c4793c78d9bc6d85d3afc3cd59c3a5b7de9bbd",
+    "contracts/CrowdfundingFactory.sol": "3dde7791b0ef67d893eab97ae2bb03584eb33faab0c1d31c3fc3c72df7cffd91"
+  },
+  "accounts": {
+    "creator": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+    "alice": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
+  },
+  "campaigns": [
+    {
+      "label": "success",
+      "address": "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0",
+      "transactionHash": "0xc668fdbf780e0eed93723abe698becc050c03789879481ba6f5f773502ed89b5",
+      "blockNumber": 3,
+      "status": 1,
+      "goalWei": "10000000000000000",
+      "endAt": "1794400350",
+      "steps": [
+        {
+          "action": "Alice pledges 0.003 ETH",
+          "before": {
+            "state": 0,
+            "claimed": false,
+            "pledgedWei": "0",
+            "alicePledgeWei": "0",
+            "escrowWei": "0",
+            "contributorCount": "0"
+          },
+          "transactionHash": "0xe306c6ee027f51e8ed44832c6d0a8cb9e57a7403ed5ae51368003dd313df057c",
+          "blockNumber": 5,
+          "blockTimestamp": 1794399752,
+          "status": 1,
+          "gasUsed": "89863",
+          "after": {
+            "state": 0,
+            "claimed": false,
+            "pledgedWei": "3000000000000000",
+            "alicePledgeWei": "3000000000000000",
+            "escrowWei": "3000000000000000",
+            "contributorCount": "1"
+          }
+        },
+        {
+          "action": "Alice unpledges 0.001 ETH before deadline",
+          "before": {
+            "state": 0,
+            "claimed": false,
+            "pledgedWei": "3000000000000000",
+            "alicePledgeWei": "3000000000000000",
+            "escrowWei": "3000000000000000",
+            "contributorCount": "1"
+          },
+          "transactionHash": "0x59ac7b7100d18b421ebbdb1fae942f31c9331615fcdcf40fcb7f932b500391c4",
+          "blockNumber": 6,
+          "blockTimestamp": 1794399753,
+          "status": 1,
+          "gasUsed": "43290",
+          "after": {
+            "state": 0,
+            "claimed": false,
+            "pledgedWei": "2000000000000000",
+            "alicePledgeWei": "2000000000000000",
+            "escrowWei": "2000000000000000",
+            "contributorCount": "1"
+          }
+        },
+        {
+          "action": "Alice adds 0.008 ETH to reach goal",
+          "before": {
+            "state": 0,
+            "claimed": false,
+            "pledgedWei": "2000000000000000",
+            "alicePledgeWei": "2000000000000000",
+            "escrowWei": "2000000000000000",
+            "contributorCount": "1"
+          },
+          "transactionHash": "0x8d7876b4e773ccd5e0b7137a613cf92dc1b63b4d6cb1fcf0ea67f617e738997f",
+          "blockNumber": 7,
+          "blockTimestamp": 1794399754,
+          "status": 1,
+          "gasUsed": "33463",
+          "after": {
+            "state": 0,
+            "claimed": false,
+            "pledgedWei": "10000000000000000",
+            "alicePledgeWei": "10000000000000000",
+            "escrowWei": "10000000000000000",
+            "contributorCount": "1"
+          }
+        },
+        {
+          "action": "Creator claims at endAt",
+          "before": {
+            "state": 0,
+            "claimed": false,
+            "pledgedWei": "10000000000000000",
+            "alicePledgeWei": "10000000000000000",
+            "escrowWei": "10000000000000000",
+            "contributorCount": "1"
+          },
+          "transactionHash": "0xd6d8085993a652b502185aceb4073d1d0e8376e343200b53e138ae01b304126b",
+          "blockNumber": 10,
+          "blockTimestamp": 1794400350,
+          "status": 1,
+          "gasUsed": "37591",
+          "after": {
+            "state": 3,
+            "claimed": true,
+            "pledgedWei": "10000000000000000",
+            "alicePledgeWei": "10000000000000000",
+            "escrowWei": "0",
+            "contributorCount": "1"
+          },
+          "atExactDeadline": true
+        }
+      ]
+    },
+    {
+      "label": "failure",
+      "address": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
+      "transactionHash": "0x34997da69ea432fbc0cc7ff97efe5e598bc86778272f39c5ab7d835f412b7369",
+      "blockNumber": 4,
+      "status": 1,
+      "goalWei": "10000000000000000",
+      "endAt": "1794400351",
+      "steps": [
+        {
+          "action": "Alice pledges 0.003 ETH",
+          "before": {
+            "state": 0,
+            "claimed": false,
+            "pledgedWei": "0",
+            "alicePledgeWei": "0",
+            "escrowWei": "0",
+            "contributorCount": "0"
+          },
+          "transactionHash": "0xefe9d9ae9b017a59e20bd7b620108a7b9d89e5e7cf9b02d5b171cf83a72be2cf",
+          "blockNumber": 8,
+          "blockTimestamp": 1794399755,
+          "status": 1,
+          "gasUsed": "89863",
+          "after": {
+            "state": 0,
+            "claimed": false,
+            "pledgedWei": "3000000000000000",
+            "alicePledgeWei": "3000000000000000",
+            "escrowWei": "3000000000000000",
+            "contributorCount": "1"
+          }
+        },
+        {
+          "action": "Alice unpledges 0.001 ETH before deadline",
+          "before": {
+            "state": 0,
+            "claimed": false,
+            "pledgedWei": "3000000000000000",
+            "alicePledgeWei": "3000000000000000",
+            "escrowWei": "3000000000000000",
+            "contributorCount": "1"
+          },
+          "transactionHash": "0xb250d5288d3b8db7b558776159d1a8a59e68f6caa49cb4bc8225ace71006ad1f",
+          "blockNumber": 9,
+          "blockTimestamp": 1794399756,
+          "status": 1,
+          "gasUsed": "43290",
+          "after": {
+            "state": 0,
+            "claimed": false,
+            "pledgedWei": "2000000000000000",
+            "alicePledgeWei": "2000000000000000",
+            "escrowWei": "2000000000000000",
+            "contributorCount": "1"
+          }
+        },
+        {
+          "action": "Alice refunds at endAt",
+          "before": {
+            "state": 0,
+            "claimed": false,
+            "pledgedWei": "2000000000000000",
+            "alicePledgeWei": "2000000000000000",
+            "escrowWei": "2000000000000000",
+            "contributorCount": "1"
+          },
+          "transactionHash": "0xe2d013ac539ec1fef543b8d969628949644e9005422500f3e1102cd88b10c8c4",
+          "blockNumber": 11,
+          "blockTimestamp": 1794400351,
+          "status": 1,
+          "gasUsed": "36404",
+          "after": {
+            "state": 2,
+            "claimed": false,
+            "pledgedWei": "0",
+            "alicePledgeWei": "0",
+            "escrowWei": "0",
+            "contributorCount": "1"
+          },
+          "atExactDeadline": true
+        }
+      ]
+    }
+  ]
+}

@@ -1,88 +1,33 @@
 ---
 name: verification-loop
-description: Quy trình kiểm chứng tự động đa tầng (Verification Loop) bắt buộc cho dự án Blockchain & DApp. Thực thi kiểm tra biên dịch (Solidity compiler / Node syntax), chạy toàn bộ bộ kiểm thử tự động (Hardhat test suite), rà soát diff git và đảm bảo tính toàn vẹn 100% trước khi nghiệm thu bất kỳ tác vụ nào.
+description: Kiểm chứng thay đổi bằng cú pháp, test phù hợp, trình duyệt khi đổi UI và đối chiếu tài liệu; báo cáo kết quả thật, không cam kết tính toàn vẹn tuyệt đối.
 ---
 
-# Strict Verification Loop & Quality Gate
+# Verification Loop
 
-Cẩm nang quy trình kiểm chứng nghiêm ngặt, đóng vai trò là "Cổng chất lượng (Quality Gate)" ngăn ngừa lỗi hồi quy (regressions) và đảm bảo tính chuẩn xác trước khi bàn giao bất kỳ tính năng hoặc sửa lỗi nào.
+## 1. Chọn phép kiểm tra theo thay đổi
 
----
+- JavaScript: `node --check demo/app.js` và các script được sửa.
+- Solidity: `npx hardhat compile`, test EVM liên quan; toàn bộ `npm test` khi cần kiểm tra hồi quy tích hợp.
+- UI: mở app và thao tác phần thay đổi; xem ảnh ở desktop/projector. Test mock provider không thay thế MetaMask thật.
+- Tài liệu: kiểm tra link tương đối, lệnh/test filter, phiên bản, số liệu và tính nhất quán với source.
+- Sau thay đổi: `git diff --check`, rà diff và `git status --short` để tránh đưa file phát sinh ngoài ý muốn vào commit.
 
-## 1. Nguyên Tắc Cốt Lõi (Zero Tolerance Policy)
+## 2. Đọc kết quả đúng phạm vi
 
-- **Không bao giờ tuyên bố hoàn thành mà chưa chạy lệnh kiểm chứng**: Mọi thay đổi mã nguồn (Solidity, JavaScript, HTML, CSS) đều phải trải qua các bước kiểm thử thực tế.
-- **Không suy đoán (No Assumptions)**: Chỉ tin vào kết quả thực tế của terminal với exit code `0`.
-- **Bảo toàn tính toàn vẹn (Integrity)**: Giữ nguyên vẹn toàn bộ chú thích, kiểu dữ liệu và cấu trúc tài liệu không liên quan đến phạm vi sửa đổi.
+- `npm test` chạy model JavaScript rồi Hardhat EVM. Hardhat còn có thể nạp file model và in lại log; không đếm hai lần.
+- Không hardcode số test vào cổng nghiệm thu; ghi số model/EVM, failed/skipped thực tế. Passing tests không chứng minh coverage 100% hoặc an toàn tuyệt đối.
+- Compiler phải không có error; ghi nhận warning có giải thích. Cảnh báo SELFDESTRUCT deprecated ở helper forced ETH là dự kiến, không xóa test để giấu warning.
+- Khi lệnh lỗi: chẩn đoán và sửa hoặc báo rõ phần không hoàn thành; không coi exit code thành công duy nhất là đủ chứng minh nghiệp vụ.
+- Test local, script RPC và ký ví thật là các mức bằng chứng khác nhau. Không tuyên bố đã ký MetaMask/Sepolia từ provider mock.
 
----
+## 3. Bằng chứng tái lập
 
-## 2. Quy Trình Kiểm Chứng 4 Tầng (4-Stage Quality Gate)
+Ghi lệnh, môi trường/compiler, thời điểm, kết quả và giới hạn. Snapshot state và receipt giúp kiểm tra nhưng không thay thế toàn bộ test. Raw Slither phải khớp source hash hiện tại nếu được trình bày là kết quả hiện hành.
 
-Mỗi khi thực hiện một thay đổi hoặc hoàn thành một tính năng, **BẮT BUỘC** thực thi tuần tự 4 tầng kiểm tra:
+## 4. Git và giao tiếp
 
-```mermaid
-flowchart TD
-    S1["Tầng 1: Cú pháp & Biên dịch<br>(node -c, npx hardhat compile)"] -->|Pass| S2["Tầng 2: Test Suite Tự động<br>(npx hardhat test)"]
-    S2 -->|Pass: 52/52 tests| S3["Tầng 3: Kiểm tra Diff & Git Tree<br>(git diff, git status)"]
-    S3 -->|Clean & Precise| S4["Tầng 4: Tài liệu & Ghi nhận<br>(walkthrough, commit git)"]
-    S1 -->|Fail| Fix["Sửa lỗi cú pháp"]
-    S2 -->|Fail| FixTest["Rà soát nguyên nhân gốc rễ & Sửa code"]
-    Fix --> S1
-    FixTest --> S2
-```
-
-### Tầng 1: Kiểm Tra Cú Pháp & Biên Dịch (Syntax & Compilation Gate)
-1. **Kiểm tra JavaScript**:
-   ```powershell
-   node -c demo/app.js
-   ```
-   *Yêu cầu:* Exit code `0`, không có lỗi cú pháp `SyntaxError`.
-2. **Kiểm tra Hợp đồng Thông minh**:
-   ```powershell
-   npx hardhat compile
-   ```
-   *Yêu cầu:* Biên dịch thành công toàn bộ file `.sol` với zero warnings/errors.
-
-### Tầng 2: Bộ Kiểm Thử Tự Động (Automated Test Suite Gate)
-Thực thi toàn bộ bộ test suite trên EVM mô phỏng:
-```powershell
-npx hardhat test
-```
-*Yêu cầu nghiêm ngặt:*
-- **Toàn bộ 52/52 test cases phải PASS 100%** (18 Unit Tests + 34 Layer 2 Hardhat Network Tests).
-- Không có bất kỳ test case nào bị `skipped` hoặc `failed`.
-- Nếu phát sinh lỗi, phải đọc log chi tiết, xác định nguyên nhân gốc rễ (root cause) và sửa dứt điểm trước khi báo cáo người dùng.
-
-### Tầng 3: Rà Soát Thay Đổi Git (Diff & Integrity Review)
-1. Kiểm tra trạng thái cây git:
-   ```powershell
-   git status
-   ```
-2. Rà soát từng dòng diff:
-   ```powershell
-   git diff
-   ```
-   *Mục tiêu kiểm tra:*
-   - Không có file rác hoặc file tạm phát sinh ngoài ý muốn.
-   - Không có code placeholder kiểu `// TODO: implement later` hoặc dòng code bỏ sót.
-   - Các biến, hàm và thẻ HTML mới có được liên kết đầy đủ không bị orphan.
-
-### Tầng 4: Cam Kết Mã Nguồn & Báo Cáo Nghiệm Thu
-1. Tạo commit git theo chuẩn **Conventional Commits**:
-   - `feat(...)`: Khi thêm tính năng mới.
-   - `fix(...)`: Khi sửa lỗi.
-   - `test(...)`: Khi bổ sung test cases.
-   - `docs(...)`: Khi cập nhật tài liệu hoặc báo cáo nghiệm thu.
-2. Cập nhật artifact nghiệm thu `walkthrough.md` với đầy đủ thông tin: Mã commit, kết quả test và bảng đối chiếu trước/sau.
-
----
-
-## 3. Checklist Tự Động Cho Agent (Agent Self-Review Checklist)
-
-Trước khi gửi câu trả lời hoàn tất cho người dùng, hãy tự trả lời 5 câu hỏi:
-1. [ ] Bạn đã chạy `node -c` và `npx hardhat test` trong lượt này chưa?
-2. [ ] Bộ test 52/52 có vượt qua 100% không?
-3. [ ] Code có dòng nào bị placeholder hoặc chú thích `// ...existing code...` không?
-4. [ ] Mọi đường dẫn file và symbol đã được tạo định dạng clickable link `[file.ext](file:///...)` chưa?
-5. [ ] Đã lưu trữ commit git và cập nhật artifact liên quan chưa?
+- Chỉ commit/push/publish/deploy khi người dùng cho phép; không tự tạo commit ở cuối mỗi tác vụ.
+- Trước khi commit: rà target/diff, stage file cụ thể, không bỏ qua hook hoặc chữ ký.
+- Tài liệu dùng link tương đối trong repo; tham chiếu code trong câu trả lời dạng `path:line`.
+- Báo điều đã kiểm tra, điều chưa kiểm tra và warning/gap còn lại. Không bắt buộc tạo một artifact hoặc file walkthrough mới cho mọi thay đổi nhỏ.

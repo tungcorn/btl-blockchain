@@ -25,7 +25,7 @@ npm run test:evm      # 41 Hardhat EVM tests
 npm run test:coverage # optional coverage measurement; not a claimed 100% result
 ```
 
-Verified on 2026-11-08: **18 model + 41 EVM tests pass**. Hardhat also discovers the model test file, so its console output appears again during the EVM command; this is not another 18 distinct tests.
+Verified on 2026-11-11: **18 model + 41 EVM tests pass**. Hardhat also discovers the model test file, so its console output appears again during the EVM command; this is not another 18 distinct tests.
 
 The EVM suite checks core flows, deadline/authorization boundaries, full withdrawal/re-pledging, transfer-failure rollback/retry, nested refund, forced ETH, and selected factory behavior. Its deterministic fuzz covers 80 active-period pledge/unpledge operations with four actors and seed `0xC0FFEE`; `balance == pledged` is checked only in that scope, not after claim or forced ETH. Test counts do not establish full statement/branch/custom-error coverage.
 
@@ -42,7 +42,20 @@ slither contracts/CrowdfundingFactory.sol --solc solc
 
 The recorded run uses Slither 0.11.6 and solc 0.8.20: **0 High/Medium**, 13 result instances for Crowdfunding and 16 for Factory including its dependency. There are four detector categories, not four findings; the runs overlap and must not be summed as independent issues. See [raw JSON, source hashes and triage](docs/security/slither-report.md). Static analysis is not an audit or a security guarantee.
 
-### 4. CLI simulation
+### 4. Reproducible local EVM demo
+
+```bash
+npm ci
+npm run demo:node      # terminal 1: loopback RPC, chain ID 31337
+npm run demo:deploy    # terminal 2: two fresh campaigns, 0.01 ETH goal / 600 seconds
+npm run demo:evidence  # optional: fresh pair, automated RPC receipts and state snapshots
+```
+
+Keep the node running. `demo:evidence` advances time for the entire local node; run it before preparing fresh campaigns for manual wallet use. Scripts only target the configured localhost RPC/chain and use public, unlocked test accounts. Never fund these accounts on a real network. Recorded local receipts do **not** demonstrate a MetaMask signature or Sepolia broadcast. See [wallet walkthrough and failure handling](docs/local-demo.md) and [actual evidence/requirements matrix](docs/report/06_doi_chieu_va_minh_chung.md).
+
+The Web3 amount field supports contributions and partial/full pre-deadline withdrawals; MAX fills a contribution amount from wallet balance, not the recorded withdrawable pledge.
+
+### 5. CLI simulation
 
 ```bash
 npm run simulate
@@ -117,4 +130,4 @@ Each member owns Solidity reasoning, relevant tests, report content, demo and or
 
 Web3, UI and slides are shared supporting work, not any member's only technical topic. Member 2 coordinates Web3 integration; each member verifies their own flow. Cross-review follows 1 → 2 → 3 → 1. Each person prepares a before/after table and three representative EVM tests, with results ready for reference rather than requiring all three to run during a 3–4 minute presentation. Each member supplies their own results/limitations for the conclusion; member 3 consolidates them. This is a responsibility plan, not a claim of historical code authorship or verified contribution percentages.
 
-See [the detailed assignment and defense checklist](docs/group_report.md).
+See [the detailed assignment and defense checklist](docs/group_report.md), [nine-slide speaking content](docs/defense-slides.md), [references](docs/report/05_tai_lieu_tham_khao.md) and [requirements/evidence appendix](docs/report/06_doi_chieu_va_minh_chung.md). Names/student IDs, final document export and manual-wallet verification remain group sign-off tasks, not automatically completed by this plan.

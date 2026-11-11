@@ -563,12 +563,17 @@ describe("Crowdfunding.sol — Layer 2 (EVM thật trên Hardhat Network)", func
 
     it("getCampaigns: limit > MAX_PAGE_SIZE bị clamp về 100 (chống RPC DoS)", async function () {
       const { factory, alice } = await deployFactory();
-      for (let i = 0; i < 5; i++) {
+      for (let i = 0; i < 101; i++) {
         await factory.connect(alice).createCampaign(ONE, DAY);
       }
-      // Yêu cầu limit 150 → vẫn trả 5 (end được clamp về total, không crash node)
+      // More than 100 campaigns distinguishes the page-size cap from total clamping.
+      expect(await factory.totalCampaigns()).to.equal(101n);
       const page = await factory.getCampaigns(0, 150);
-      expect(page.length).to.equal(5);
+      expect(page.length).to.equal(100);
+      const tail = await factory.getCampaigns(100, 150);
+      expect(tail.length).to.equal(1);
+      expect(page[99]).to.equal(await factory.deployedCampaigns(99));
+      expect(tail[0]).to.equal(await factory.deployedCampaigns(100));
       expect(await factory.MAX_PAGE_SIZE()).to.equal(100n);
     });
 

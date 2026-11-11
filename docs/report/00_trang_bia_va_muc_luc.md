@@ -42,7 +42,7 @@ Quyển báo cáo được chia thành 4 phần độc lập theo đúng quy chu
 * [**PHẦN 1: ĐẶT VẤN ĐỀ**](01_dat_van_de.md)
   * 1.1. Bối cảnh gọi vốn cộng đồng (Crowdfunding)
   * 1.2. Bài toán đặt ra và rào cản của mô hình tập trung (Web2)
-  * 1.3. Các vấn đề liên quan và khảo sát thực tế (All-or-Nothing, The DAO, DoS)
+  * 1.3. Các vấn đề liên quan (All-or-Nothing, reentrancy, Push/Pull, deadline và accounting)
   * 1.4. Mục tiêu và phạm vi nghiên cứu (Case study: Dự án Orbit trong sandbox)
 
 * [**PHẦN 2: CƠ SỞ LÝ THUYẾT VÀ CÔNG NGHỆ**](02_co_so_ly_thuyet.md)
@@ -61,3 +61,17 @@ Quyển báo cáo được chia thành 4 phần độc lập theo đúng quy chu
   * 4.1. Giá trị và kết quả thu được
   * 4.2. Hạn chế của đề tài
   * 4.3. Hướng mở rộng trong tương lai (Milestone DAO Voting, SafeERC20, Layer-2, Quadratic Funding)
+
+* [**TÀI LIỆU THAM KHẢO**](05_tai_lieu_tham_khao.md)
+* [**PHỤ LỤC: ĐỐI CHIẾU YÊU CẦU VÀ MINH CHỨNG THỰC TẾ**](06_doi_chieu_va_minh_chung.md)
+
+## Hoàn thiện bản nộp
+
+Ghép trang bìa → Phần 1–4 → tài liệu tham khảo → phụ lục, giữ heading/caption nhất quán và render sơ đồ Mermaid khi xuất PDF/DOCX theo yêu cầu môn. Đây là nội dung Markdown, chưa phải xác nhận đã có bản nộp dàn trang hoàn chỉnh.
+
+- [ ] Điền tên/MSSV/giảng viên, kiểm tra năm học và rubric thực tế; không đoán thông tin cá nhân.
+- [ ] Đính kèm log/ảnh thật của nhóm; phân biệt evidence RPC local với MetaMask ký thật/Sepolia.
+- [ ] Rà link, mục lục, số trang, bảng/code không bị cắt sau khi xuất file.
+- [ ] Ba người tự diễn tập luồng và câu hỏi của mình, hoàn thành vòng rà chéo.
+
+Nội dung thuyết trình chuẩn bị ở [bản 9 slide](../defense-slides.md); quy trình ký ví thủ công ở [hướng dẫn local](../local-demo.md).

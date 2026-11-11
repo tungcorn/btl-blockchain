@@ -10,6 +10,9 @@
     "test:coverage": "hardhat coverage",
     "audit:static": "slither contracts --solc solc",
     "simulate": "node scripts/simulate.js",
+    "demo:node": "hardhat node --hostname 127.0.0.1",
+    "demo:deploy": "hardhat run scripts/deploy-local.js --network localhost",
+    "demo:evidence": "hardhat run scripts/record-local-evidence.js --network localhost",
     "serve": "npx serve demo"
   },
   "keywords": [
