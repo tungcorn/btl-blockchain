@@ -53,6 +53,7 @@ let appState = {
   simulatedTimeOffset: 0,
   claimed: false,
   contributions: {},
+  lastExit: null, // Không phụ thuộc nhật ký có thể bị xóa/cắt ngắn.
   eventLogs: []
 };
 
@@ -97,19 +98,20 @@ function notify(kind, message, title) {
     `<div class="toast-body">` +
       `<div class="toast-title"></div>` +
       `<div class="toast-msg"></div>` +
-    `</div>`;
+    `</div>` +
+    `<button type="button" class="toast-dismiss" aria-label="Đóng thông báo">×</button>`;
   el.querySelector('.toast-title').textContent = title || meta.title;
   el.querySelector('.toast-msg').textContent = message;
 
-  while (stack.children.length >= 2) stack.firstElementChild.remove();
-  stack.appendChild(el);
+  // Chỉ giữ phản hồi mới nhất; chi tiết giao dịch vẫn ở nhật ký riêng.
+  stack.replaceChildren(el);
 
   const dismiss = () => {
     el.classList.add('is-leaving');
     el.addEventListener('animationend', () => el.remove(), { once: true });
   };
-  const timer = setTimeout(dismiss, kind === 'error' ? 6500 : 4500);
-  el.addEventListener('click', () => { clearTimeout(timer); dismiss(); });
+  const timer = setTimeout(dismiss, kind === 'error' ? 6500 : kind === 'ok' ? 3000 : 4500);
+  el.querySelector('.toast-dismiss').addEventListener('click', () => { clearTimeout(timer); dismiss(); });
 }
 
 // ====================================================================
@@ -144,7 +146,7 @@ function applyTheme(theme) {
   } else {
     document.documentElement.removeAttribute('data-theme');
     if (icon) icon.innerHTML = ICON.sun;
-    if (label) label.textContent = 'Trình chiếu';
+    if (label) label.textContent = 'Giao diện sáng';
   }
 }
 
@@ -186,6 +188,7 @@ function switchModeTab(mode) {
   const tabSandbox = document.getElementById('tabBtnSandbox');
   const tabWeb3 = document.getElementById('tabBtnWeb3');
   const toSandbox = mode === 'sandbox';
+  document.getElementById('toastStack').replaceChildren();
 
   if (sandboxView) sandboxView.style.display = toSandbox ? 'grid' : 'none';
   if (web3View) web3View.style.display = toSandbox ? 'none' : 'block';
@@ -285,6 +288,17 @@ function setTimeByDays(days) {
 // trong Crowdfunding.sol, rồi báo lỗi bằng thông báo trong trang.
 // ====================================================================
 
+// Sandbox dùng Number, chỉ minh họa tới 0.01 ETH; Web3 dùng wei/BigInt riêng.
+function readSandboxAmount() {
+  const input = document.getElementById('pledgeInput');
+  const amount = Number(input.value);
+  if (!Number.isFinite(amount) || amount <= 0 || !input.validity.valid) {
+    notify('error', 'Mô phỏng nhận số ETH dương theo bước 0.01 ETH. Đây là giới hạn giao diện, không phải mức tối thiểu của Solidity.');
+    return null;
+  }
+  return amount;
+}
+
 function handlePledge() {
   const state = getCampaignState();
   if (state !== 'Active') {
@@ -292,13 +306,8 @@ function handlePledge() {
     return;
   }
 
-  const input = document.getElementById('pledgeInput');
-  const amount = parseFloat(input.value);
-
-  if (isNaN(amount) || amount <= 0) {
-    notify('error', 'Số ETH đóng góp phải lớn hơn 0. Hợp đồng hoàn tác với ZeroPledge().');
-    return;
-  }
+  const amount = readSandboxAmount();
+  if (amount === null) return;
 
   const wallet = SIM_WALLETS[appState.activePersonaId];
   if (wallet.balance < amount) {
@@ -306,11 +315,11 @@ function handlePledge() {
     return;
   }
 
-  wallet.balance -= amount;
-  appState.pledgedEth += amount;
-  appState.contributions[wallet.address] = (appState.contributions[wallet.address] || 0) + amount;
+  wallet.balance = Number((wallet.balance - amount).toFixed(2));
+  appState.pledgedEth = Number((appState.pledgedEth + amount).toFixed(2));
+  appState.contributions[wallet.address] = Number(((appState.contributions[wallet.address] || 0) + amount).toFixed(2));
 
-  notify('ok', `${wallet.name} đã góp ${amount.toFixed(2)} ETH. Quỹ hiện có ${appState.pledgedEth.toFixed(2)} ETH.`);
+  notify('ok', `${wallet.name} đã góp ${amount.toFixed(2)} ETH.`);
   addLog('Pledge', `${wallet.name} góp ${amount.toFixed(2)} ETH`,
     `Tổng quỹ ${appState.pledgedEth.toFixed(2)} / ${appState.goalEth.toFixed(2)} ETH`, 'event-pledge');
   render();
@@ -330,18 +339,19 @@ function handleUnpledge() {
     return;
   }
 
-  const input = document.getElementById('pledgeInput');
-  const retract = Number(input.value);
-  if (!Number.isFinite(retract) || retract <= 0 || retract > contrib) {
+  const retract = readSandboxAmount();
+  if (retract === null) return;
+  if (retract > contrib) {
     notify('error', `Nhập số ETH lớn hơn 0 và không vượt khoản đã góp (${contrib.toFixed(2)} ETH). unpledge(amount) sẽ hoàn tác với NothingToRefund().`);
     return;
   }
 
   // CEI: sổ sách ghi trước, chuyển tiền sau.
-  appState.pledgedEth -= retract;
-  appState.contributions[wallet.address] -= retract;
-  if (appState.contributions[wallet.address] <= 0) delete appState.contributions[wallet.address];
-  wallet.balance += retract;
+  appState.pledgedEth = Number((appState.pledgedEth - retract).toFixed(2));
+  appState.contributions[wallet.address] = Number((contrib - retract).toFixed(2));
+  if (appState.contributions[wallet.address] === 0) delete appState.contributions[wallet.address];
+  wallet.balance = Number((wallet.balance + retract).toFixed(2));
+  appState.lastExit = 'unpledge';
 
   notify('ok', `${wallet.name} đã rút lại ${retract.toFixed(2)} ETH về ví.`);
   addLog('Unpledge', `${wallet.name} rút cọc ${retract.toFixed(2)} ETH`,
@@ -394,10 +404,11 @@ function handleRefund() {
   // Thiếu vế thứ hai thì bất biến `pledged == Σ pledgedAmount` vỡ ngay.
   appState.contributions[wallet.address] = 0;
   delete appState.contributions[wallet.address];
-  appState.pledgedEth -= contrib;
-  wallet.balance += contrib;
+  appState.pledgedEth = Number((appState.pledgedEth - contrib).toFixed(2));
+  wallet.balance = Number((wallet.balance + contrib).toFixed(2));
+  appState.lastExit = 'refund';
 
-  notify('ok', `${wallet.name} đã nhận hoàn tiền ${contrib.toFixed(2)} ETH. Quỹ còn ${appState.pledgedEth.toFixed(2)} ETH.`);
+  notify('ok', `${wallet.name} đã nhận hoàn tiền ${contrib.toFixed(2)} ETH.`);
   addLog('Refund', `${wallet.name} hoàn tiền ${contrib.toFixed(2)} ETH`,
     'Pull-over-Push: số dư về 0 trước khi chuyển ETH (mẫu CEI)', 'event-refund');
   render();
@@ -423,6 +434,7 @@ function resetCampaign() {
   appState.simulatedTimeOffset = 0;
   appState.claimed = false;
   appState.contributions = {};
+  appState.lastExit = null;
   appState.eventLogs = [];
 
   SIM_WALLETS.creator.balance = 1.50;
@@ -439,9 +451,9 @@ function resetCampaign() {
 }
 
 function pledgeFor(wallet, amount) {
-  wallet.balance -= amount;
-  appState.pledgedEth += amount;
-  appState.contributions[wallet.address] = (appState.contributions[wallet.address] || 0) + amount;
+  wallet.balance = Number((wallet.balance - amount).toFixed(2));
+  appState.pledgedEth = Number((appState.pledgedEth + amount).toFixed(2));
+  appState.contributions[wallet.address] = Number(((appState.contributions[wallet.address] || 0) + amount).toFixed(2));
   addLog('Pledge', `${wallet.name} góp ${amount.toFixed(2)} ETH`,
     `Tiến độ ${appState.pledgedEth.toFixed(2)} / ${appState.goalEth.toFixed(2)} ETH`, 'event-pledge');
 }
@@ -742,6 +754,15 @@ function renderBackersTable(backers) {
   if (!tbody) return;
 
   if (backers.length === 0) {
+    const active = getCampaignState() === 'Active';
+    const refunded = !active && appState.lastExit === 'refund';
+    const title = refunded ? 'Đã hoàn hết các khoản góp được ghi nhận'
+      : appState.lastExit ? 'Không còn khoản góp được ghi nhận' : 'Chưa có khoản góp';
+    const description = active
+      ? appState.lastExit ? 'Chiến dịch đang mở. Bạn có thể nhập số ETH để góp lại.'
+        : 'Nhập số ETH rồi bấm Đóng góp ETH để bắt đầu mô phỏng.'
+      : refunded ? 'Khoản góp và quỹ đều về 0. Không thể hoàn tiền lần hai.'
+      : 'Chiến dịch đã hết hạn; không thể góp thêm. Đặt lại để thử kịch bản mới.';
     tbody.innerHTML = `
       <tr class="empty-placeholder">
         <td colspan="3">
@@ -749,8 +770,8 @@ function renderBackersTable(backers) {
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" class="empty-icon" aria-hidden="true">
               <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
             </svg>
-            <div class="empty-title">Chưa có người góp vốn</div>
-            <div class="empty-desc">Chọn số ETH trong mục Đóng góp vốn để bắt đầu mô phỏng.</div>
+            <div class="empty-title">${title}</div>
+            <div class="empty-desc">${description}</div>
           </div>
         </td>
       </tr>`;
@@ -1017,6 +1038,12 @@ function setTxLoading(btnId, isLoading, loadingText) {
   }
 }
 
+function clearWeb3Stats() {
+  ['w3State', 'w3Pledged', 'w3ContractBalance', 'w3TimeLeft', 'w3MyPledge']
+    .forEach(id => setText(id, '—'));
+  setText('w3WalletBalance', 'Số dư ví: —');
+}
+
 async function handleWeb3AccountsChanged(accounts) {
   const version = ++WEB3.sessionVersion;
   WEB3.connected = false;
@@ -1024,8 +1051,7 @@ async function handleWeb3AccountsChanged(accounts) {
   WEB3.signer = null;
   WEB3.contract = null;
   web3SetButtonsDisabled(true);
-  ['w3State', 'w3Pledged', 'w3TimeLeft', 'w3MyPledge'].forEach(id => setText(id, '—'));
-  setText('w3WalletBalance', 'Số dư ví: —');
+  clearWeb3Stats();
   if (!accounts?.length) {
     setText('web3NetworkBadge', 'Chưa kết nối');
     document.getElementById('web3NetworkBadge').removeAttribute('style');
@@ -1076,6 +1102,7 @@ async function connectMetaMask() {
     ++WEB3.sessionVersion;
     WEB3.connected = false;
     web3SetButtonsDisabled(true);
+    clearWeb3Stats();
     setText('web3Status', 'Đang kết nối MetaMask…');
     WEB3.provider = new ethers.BrowserProvider(window.ethereum);
     await WEB3.provider.send('eth_requestAccounts', []);
@@ -1152,17 +1179,20 @@ async function refreshOnChainState() {
   const version = WEB3.sessionVersion;
   const c = WEB3.contract;
   const address = WEB3.address;
+  const provider = WEB3.provider;
+  const contractAddress = WEB3.contractAddress;
   try {
-    const [pledged, goal, stateId, timeLeft, myPledge, count, creator, balance] = await Promise.all([
+    const [pledged, goal, stateId, timeLeft, myPledge, count, creator, balance, contractBalance] = await Promise.all([
       c.pledged(), c.goal(), c.state(), c.timeLeft(),
       c.pledgedAmount(address), c.contributorCount(), c.creator(),
-      WEB3.provider.getBalance(address)
+      provider.getBalance(address), provider.getBalance(contractAddress)
     ]);
     if (version !== WEB3.sessionVersion || c !== WEB3.contract) return;
     WEB3.balance = balance;
 
     setText('w3State', web3StateLabel(Number(stateId)));
     setText('w3Pledged', `${ethers.formatEther(pledged)} / ${ethers.formatEther(goal)} ETH`);
+    setText('w3ContractBalance', `${ethers.formatEther(contractBalance)} ETH`);
     const secs = Number(timeLeft);
     const remaining = secs < 3600
       ? `${Math.floor(secs / 60)} phút ${secs % 60} giây`
@@ -1197,10 +1227,11 @@ async function refreshOnChainState() {
     }
 
     const shortAddress = `${address.slice(0, 6)}…${address.slice(-4)}`;
-    setText('web3Status', `Ví ${shortAddress} · ${WEB3_CHAIN_NAMES[WEB3.chainId] || 'Chain ' + WEB3.chainId} · ${count} người góp. Số liệu từ lần đọc RPC gần nhất; bấm Làm mới để cập nhật.`);
+    setText('web3Status', `Ví ${shortAddress} · ${WEB3_CHAIN_NAMES[WEB3.chainId] || 'Chain ' + WEB3.chainId} · contributorCount = ${count} (không giảm khi refund). Số liệu từ lần đọc RPC gần nhất; bấm Làm mới để cập nhật.`);
   } catch (err) {
     if (version === WEB3.sessionVersion && c === WEB3.contract) {
       web3SetButtonsDisabled(true);
+      clearWeb3Stats();
       setText('web3Status', `Không đọc được trạng thái on-chain: ${web3DecodeError(err)}`);
       setText('web3ActionHint', 'Chưa xác nhận được quyền thao tác. Bấm Làm mới hoặc kết nối lại ví.');
     }
