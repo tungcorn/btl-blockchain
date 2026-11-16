@@ -655,7 +655,7 @@ body {
 
 .guard-label {
   display: block;
-  font-size: 0.8125rem;
+  font-size: 0.875rem;
   color: var(--text-muted);
   margin-bottom: 4px;
 }
@@ -1038,7 +1038,7 @@ body {
 }
 
 .condition-hint {
-  font-size: 0.8125rem;
+  font-size: 0.875rem;
   color: var(--text-muted);
   line-height: 1.5;
   margin-top: 4px;
@@ -1316,7 +1316,7 @@ body {
 }
 
 .inv-live-label {
-  font-size: 0.72rem;
+  font-size: 0.8125rem;
   color: var(--text-muted);
   text-transform: none;
   letter-spacing: 0;
@@ -1835,7 +1835,7 @@ input:focus-visible,
 
 .web3-stats-bar {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr) minmax(0, 1.5fr) repeat(2, minmax(0, 1.1fr));
   padding: 16px 0;
   border-top: 1px solid var(--border-hairline);
   border-bottom: 1px solid var(--border-hairline);
@@ -1843,8 +1843,11 @@ input:focus-visible,
 
 @media (max-width: 900px) {
   .web3-stats-bar {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px 0;
   }
+  .web3-stats-bar .stat-card:nth-child(odd) { padding-left: 0; }
+  .web3-stats-bar .stat-card:nth-child(even) { border-right: none; }
 }
 
 .stat-card {
@@ -1869,9 +1872,11 @@ input:focus-visible,
 }
 
 .stat-val {
-  font-size: 1.25rem;
+  display: block;
+  font-size: 1.125rem;
   font-weight: 700;
   font-family: var(--font-mono);
+  overflow-wrap: anywhere; /* Giữ đầy đủ số ETH chính xác, không cắt bằng dấu … */
 }
 
 /* Cụm nhập vốn Web3 On-chain độc lập */
@@ -2019,28 +2024,40 @@ input:focus-visible,
    -------------------------------------------------------------------------- */
 
 .toast-stack {
-  position: fixed;
-  top: 20px;
-  right: 20px;
-  z-index: 1000;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  pointer-events: none;
+  min-width: 0;
+}
+
+.toast-stack:not(:empty) {
+  margin-bottom: 12px;
 }
 
 .toast {
-  pointer-events: auto;
   display: flex;
-  align-items: flex-start;
-  gap: 12px;
+  align-items: center;
+  gap: 10px;
   background: var(--bg-surface);
-  border: 1px solid var(--border-hairline);
+  border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
-  padding: 12px 16px;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.35);
-  max-width: 380px;
+  padding: 6px 12px;
   animation: toastIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.toast-body {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.toast-dismiss {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: var(--bg-subtle);
+  color: var(--text-main);
+  font-size: 1.125rem;
+  cursor: pointer;
 }
 
 .toast.is-leaving {
@@ -2059,16 +2076,18 @@ input:focus-visible,
 .toast.is-info .toast-icon { color: var(--color-primary); }
 
 .toast-title {
-  font-size: 0.82rem;
+  display: inline;
+  font-size: 0.875rem;
   font-weight: 700;
   color: var(--text-main);
-  margin-bottom: 2px;
+  margin-right: 8px;
 }
 
 .toast-msg {
-  font-size: 0.78rem;
+  display: inline;
+  font-size: 0.875rem;
   color: var(--text-muted);
-  line-height: 1.35;
+  line-height: 1.5;
 }
 
 @keyframes toastIn {

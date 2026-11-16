@@ -88,6 +88,9 @@
       </div>
     </header>
 
+    <!-- Phản hồi trong luồng trang, không che ví, sổ cái hay nút thao tác. -->
+    <div class="toast-stack" id="toastStack" role="status" aria-live="polite" aria-atomic="true"></div>
+
     <!-- ══════════════════════════════════════════════════════════════
          CHẾ ĐỘ 1 — SANDBOX MÔ PHỎNG (PRODUCT-FIRST DASHBOARD)
          ══════════════════════════════════════════════════════════════ -->
@@ -174,14 +177,14 @@
           <div class="action-cockpit">
             <div class="action-pod pledge-pod">
               <div class="pod-header">
-                <label class="pod-title" for="pledgeInput">Đóng góp vốn</label>
-                <span class="pod-sub">Chọn số ETH bạn muốn ủng hộ</span>
+                <label class="pod-title" for="pledgeInput">Số ETH góp / rút trước hạn</label>
+                <span class="pod-sub" id="sandboxAmountHint">Bước 0.01 ETH chỉ áp dụng cho mô phỏng.</span>
               </div>
 
               <div class="pledge-input-row">
                 <div class="input-currency-wrapper">
-                  <input type="number" id="pledgeInput" min="0.5" step="0.5" value="1.0"
-                         class="clean-num-input" aria-label="Số ETH muốn đóng góp">
+                  <input type="number" id="pledgeInput" min="0.01" step="0.01" value="1.0"
+                         class="clean-num-input" aria-label="Số ETH đóng góp hoặc rút trước hạn" aria-describedby="sandboxAmountHint">
                   <span class="input-currency-unit">ETH</span>
                 </div>
                 <div class="preset-chips">
@@ -202,7 +205,7 @@
                 </button>
               </div>
               <div class="unpledge-action">
-                <button id="btnUnpledge" class="btn btn-text" onclick="handleUnpledge()" aria-describedby="unpledgeConditionHint">Rút lại tiền</button>
+                <button id="btnUnpledge" class="btn btn-text" onclick="handleUnpledge()" aria-describedby="unpledgeConditionHint">Rút số đã nhập</button>
                 <div class="condition-hint" id="unpledgeConditionHint">Bạn có thể rút lại tiền khi chiến dịch còn hạn.</div>
               </div>
             </div>
@@ -277,8 +280,8 @@
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" class="empty-icon" aria-hidden="true">
                           <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
                         </svg>
-                        <div class="empty-title">Chưa có người góp vốn</div>
-                        <div class="empty-desc">Chọn số ETH trong mục Đóng góp vốn để bắt đầu mô phỏng.</div>
+                        <div class="empty-title">Chưa có khoản góp</div>
+                        <div class="empty-desc">Nhập số ETH rồi bấm Đóng góp ETH để bắt đầu mô phỏng.</div>
                       </div>
                     </td>
                   </tr>
@@ -384,8 +387,8 @@
                   </svg>
                 </span>
                 <div class="enforce-body">
-                  <div class="enforce-title">ETH gửi ép không bị kẹt</div>
-                  <div class="enforce-note">Chủ dự án có thể gọi <code>sweepExcessEther()</code> để thu phần số dư vượt <code>pledged</code>. Hàm không trừ các khoản góp đang được ghi nhận.</div>
+                  <div class="enforce-title">Chỉ thu hồi phần dư vượt khoản góp ghi nhận</div>
+                  <div class="enforce-note">Chỉ creator gọi được <code>sweepExcessEther()</code> khi <code>balance &gt; pledged</code>, để thu <code>balance − pledged</code>. Không bảo đảm thu hồi mọi ETH gửi sau claim, vì <code>pledged</code> vẫn còn.</div>
                 </div>
               </div>
             </div>
@@ -499,8 +502,12 @@
               <span class="stat-val" id="w3State">—</span>
             </div>
             <div class="stat-card">
-              <span class="stat-label">Đã góp / mục tiêu</span>
-              <span class="stat-val text-accent" id="w3Pledged">—</span>
+              <span class="stat-label">Góp ghi nhận / mục tiêu</span>
+              <span class="stat-val" id="w3Pledged">—</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-label">Số dư ETH hợp đồng</span>
+              <span class="stat-val" id="w3ContractBalance">—</span>
             </div>
             <div class="stat-card">
               <span class="stat-label">Thời gian còn lại</span>
@@ -568,9 +575,6 @@
     </section>
 
   </div>
-
-  <!-- Thông báo Toast trong trang -->
-  <div class="toast-stack" id="toastStack" role="status" aria-live="polite"></div>
 
   <script src="app.js"></script>
 </body>
