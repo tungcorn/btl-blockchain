@@ -1,0 +1,3 @@
+# Keep vendored text byte-stable across platforms for the SHA-256 manifest.
+demo/vendor/* text eol=lf
+demo/vendor/files/*.woff2 binary

@@ -37,7 +37,7 @@ description: Chuẩn bị bảo vệ Đề W theo ba luồng Blockchain, phân b
 - Hardhat tests chạy bytecode trên EVM cục bộ. Script RPC local có receipt cũng không chứng minh MetaMask đã ký.
 - MetaMask nối local node hoặc Sepolia cần xác nhận trong ví, chain ID, địa chỉ, hash/receipt và state trước/sau. Không dùng ví có tài sản thật cho tài khoản test công khai.
 - Mạng/ví lỗi: chuyển sang kết quả Hardhat EVM đã chuẩn bị và sandbox để minh họa, nói rõ đổi môi trường. Không gửi lại giao dịch mù quáng khi chưa kiểm tra hash/receipt/nonce.
-- Không tuyên bố offline hoàn toàn khi trang còn phụ thuộc CDN. Font có fallback; Ethers cần được tải để kết nối Web3.
+- Ethers/font đã lưu local trong demo/vendor; sandbox không cần Internet lúc chạy. Không gọi toàn bộ hệ thống là offline: cài dependency ban đầu cần mạng, Sepolia cần RPC, ví local cần node đang chạy. Connector chỉ hỗ trợ chain 11155111 / 31337 / 1337, không mở giao dịch trên Mainnet.
 
 ## Những câu phải trả lời đúng
 

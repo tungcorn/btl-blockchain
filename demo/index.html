@@ -6,14 +6,9 @@
   <title>CrowdFund3 • Hợp Đồng Gọi Vốn On-Chain</title>
   <meta name="description" content="Hợp đồng thông minh gọi vốn cộng đồng phi tập trung: mục tiêu vốn, hạn thời gian, mẫu CEI, khóa chống tái nhập và hoàn tiền Pull-over-Push.">
 
-  <!-- Be Vietnam Pro: typography chuẩn tiếng Việt đĩnh đạc
-       JetBrains Mono: dùng cho số liệu, địa chỉ và câu lệnh logic -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-
-  <!-- Ethers.js CDN -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
+  <!-- Tài nguyên local đã khóa phiên bản; dựng lại bằng npm run demo:assets. -->
+  <link rel="stylesheet" href="vendor/fonts.css">
+  <script src="vendor/ethers.umd.min.js"></script>
 
   <link rel="stylesheet" href="style.css">
 </head>
@@ -475,7 +470,7 @@
             <div class="campaign-subtag">Tương tác on-chain thật</div>
             <h2 class="web3-main-title">Kết nối MetaMask · Local / Sepolia</h2>
             <p class="web3-sub-desc">
-              Kết nối ví và hợp đồng trên Sepolia hoặc mạng cục bộ. Mỗi giao dịch cần bạn xác nhận trong MetaMask.
+              Chỉ hỗ trợ Sepolia (11155111) hoặc local (31337 / 1337), không mở giao dịch Mainnet. Mỗi giao dịch cần bạn xác nhận trong MetaMask.
             </p>
           </div>
           <div class="web3-badge-pill" id="web3NetworkBadge">Chưa kết nối</div>

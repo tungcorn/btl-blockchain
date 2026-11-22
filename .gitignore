@@ -21,6 +21,8 @@ coverage.json
 
 # UI test shots & captures
 .shots/
+playwright-report/
+test-results/
 
 # System and IDE
 .DS_Store

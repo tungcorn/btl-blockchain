@@ -8,12 +8,14 @@ Blockchain coursework for a three-person group: **Đề W — crowdfunding with 
 Open [demo/index.html](demo/index.html) in a browser, or serve locally:
 
 ```bash
-npm run serve
-# or: npx serve demo
+npm ci
+npm run serve    # http://127.0.0.1:3000; server version is pinned in the lockfile
 ```
 
+Ethers **6.17.0** and Vietnamese/monospace fonts are committed under `demo/vendor/`, including licenses and a SHA-256 manifest. Rebuild them with `npm run demo:assets` after `npm ci`. The sandbox needs no Internet at runtime; Sepolia still needs RPC connectivity, and installing dependencies/browser binaries needs an initial download.
+
 * **Sandbox:** JavaScript simulation with Creator/Alice/Bob/Charlie and controllable simulated time. It does not execute Solidity or change a blockchain timestamp.
-* **MetaMask:** interact with a deployed campaign on a supported connected network. Confirm the chain ID and contract address. Browser tests with a mocked provider do not prove a real wallet transaction was signed/broadcast.
+* **MetaMask:** only Sepolia (11155111), Hardhat/Anvil local (31337), and Ganache local (1337) are enabled. Mainnet/other chains stay locked if switching is rejected or ineffective. Confirm the chain ID and contract address. Browser tests with a mocked provider do not prove a real wallet transaction was signed/broadcast.
 * The classroom layout prioritizes desktop/projector use, with light/dark themes, funding/time/permission guards, contribution accounting and separate RPC status/transaction history.
 
 ### 2. Tests
@@ -30,6 +32,15 @@ Verified on 2026-11-11: **18 model + 41 EVM tests pass**. Hardhat also discovers
 The EVM suite checks core flows, deadline/authorization boundaries, full withdrawal/re-pledging, transfer-failure rollback/retry, nested refund, forced ETH, and selected factory behavior. Its deterministic fuzz covers 80 active-period pledge/unpledge operations with four actors and seed `0xC0FFEE`; `balance == pledged` is checked only in that scope, not after claim or forced ETH. Test counts do not establish full statement/branch/custom-error coverage.
 
 Three representative tests per member, with commands and before/after evidence, are documented in [report section 3.3](docs/report/03_trien_khai_va_thuc_nghiem.md).
+
+Browser regressions are separate from Solidity tests:
+
+```bash
+npm run test:ui:install  # first run: download matching Chromium; Linux CI may need OS dependencies
+npm run test:ui
+```
+
+Playwright starts/stops its own loopback server on port 3000; stop any manual demo server first. Tests in `tests/ui/` block external resource requests and exercise the actual UI, including network rejection, partial withdrawals, permissions, balance/accounting, RPC failure, pending locks and disconnect races. Wallet/provider contracts are controlled mocks, not MetaMask signatures or EVM receipts. Screenshots/traces are local test artifacts, not genuine on-chain evidence.
 
 ### 3. Static analysis
 

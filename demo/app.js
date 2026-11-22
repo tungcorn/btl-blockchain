@@ -883,6 +883,14 @@ const WEB3 = {
   _listenersAttached: false
 };
 
+const WEB3_DEMO_CHAIN_IDS = new Set([11155111, 31337, 1337]);
+
+function assertDemoChain(chainId) {
+  if (!WEB3_DEMO_CHAIN_IDS.has(chainId)) {
+    throw new Error(`Mạng ${chainId} không dành cho demo. Chọn Sepolia (11155111) hoặc local (31337 / 1337), rồi kết nối lại. Không gửi ETH thật.`);
+  }
+}
+
 const WEB3_CHAIN_NAMES = {
   1: 'Ethereum Mainnet',
   11155111: 'Sepolia Testnet',
@@ -1063,6 +1071,9 @@ async function handleWeb3AccountsChanged(accounts) {
   setText('web3Status', 'Đang cập nhật signer cho tài khoản mới…');
   try {
     const provider = new ethers.BrowserProvider(window.ethereum);
+    const chainId = Number((await provider.getNetwork()).chainId);
+    assertDemoChain(chainId);
+    if (chainId !== WEB3.chainId) throw new Error('Mạng đã thay đổi. Kết nối lại hợp đồng trên mạng đang chọn.');
     const signer = await provider.getSigner(accounts[0]);
     const address = await signer.getAddress();
     if (version !== WEB3.sessionVersion) return;
@@ -1083,7 +1094,7 @@ async function handleWeb3AccountsChanged(accounts) {
 
 async function connectMetaMask() {
   if (typeof ethers === 'undefined') {
-    notify('error', 'Ethers.js chưa tải được. Kiểm tra kết nối CDN trong index.html.');
+    notify('error', 'Ethers.js chưa tải được. Kiểm tra demo/vendor hoặc chạy npm run demo:assets sau npm ci.');
     return;
   }
   if (!window.ethereum) {
@@ -1097,39 +1108,49 @@ async function connectMetaMask() {
     return;
   }
 
+  if (WEB3.txPending) return;
+  const version = ++WEB3.sessionVersion;
   try {
-    if (WEB3.txPending) return;
-    ++WEB3.sessionVersion;
     WEB3.connected = false;
+    WEB3.signer = null;
+    WEB3.contract = null;
+    WEB3.address = null;
+    WEB3.balance = 0n;
     web3SetButtonsDisabled(true);
     clearWeb3Stats();
+    setText('web3NetworkBadge', 'Chưa kết nối');
+    document.getElementById('web3NetworkBadge').removeAttribute('style');
     setText('web3Status', 'Đang kết nối MetaMask…');
-    WEB3.provider = new ethers.BrowserProvider(window.ethereum);
-    await WEB3.provider.send('eth_requestAccounts', []);
-    WEB3.signer = await WEB3.provider.getSigner();
-    WEB3.address = await WEB3.signer.getAddress();
-    const net = await WEB3.provider.getNetwork();
-    WEB3.chainId = Number(net.chainId);
-    WEB3.contractAddress = address;
-    WEB3.contract = new ethers.Contract(address, CROWDFUNDING_ABI, WEB3.signer);
-
-    // Kiểm tra địa chỉ đích trả được goal(); đây không phải xác minh bytecode.
-    await WEB3.contract.goal();
-
-    // Gợi ý chuyển Sepolia nếu đang ở mạng khác ngoài Sepolia hoặc Localhost
-    if (WEB3.chainId !== 11155111 && WEB3.chainId !== 31337 && WEB3.chainId !== 1337) {
-      notify('info', 'Khuyên dùng mạng Sepolia Testnet (Chain ID 11155111).');
+    let provider = new ethers.BrowserProvider(window.ethereum);
+    await provider.send('eth_requestAccounts', []);
+    let chainId = Number((await provider.getNetwork()).chainId);
+    if (!WEB3_DEMO_CHAIN_IDS.has(chainId)) {
+      notify('info', 'Demo không gửi giao dịch trên mạng này. Chuyển sang Sepolia để tiếp tục.');
       try {
         await window.ethereum.request({
           method: 'wallet_switchEthereumChain',
           params: [{ chainId: '0xaa36a7' }]
         });
-        const updatedNet = await WEB3.provider.getNetwork();
-        WEB3.chainId = Number(updatedNet.chainId);
       } catch (switchErr) {
-        console.warn('Switch chain optional or rejected:', switchErr);
+        throw new Error('Chưa chuyển sang mạng demo. Chọn Sepolia hoặc local trong MetaMask rồi kết nối lại; các thao tác vẫn bị khóa.');
       }
+      // Provider mới tránh giữ network/cache cũ sau khi ví đổi chain.
+      provider = new ethers.BrowserProvider(window.ethereum);
+      chainId = Number((await provider.getNetwork()).chainId);
     }
+    assertDemoChain(chainId);
+    const signer = await provider.getSigner();
+    const walletAddress = await signer.getAddress();
+    const contract = new ethers.Contract(address, CROWDFUNDING_ABI, signer);
+    // Kiểm tra địa chỉ đích trả được goal(); đây không phải xác minh bytecode.
+    await contract.goal();
+    if (version !== WEB3.sessionVersion) return;
+    WEB3.provider = provider;
+    WEB3.signer = signer;
+    WEB3.address = walletAddress;
+    WEB3.chainId = chainId;
+    WEB3.contractAddress = address;
+    WEB3.contract = contract;
 
     // Đăng ký lắng nghe sự kiện đổi ví / đổi chain một lần duy nhất
     if (window.ethereum.on && !WEB3._listenersAttached) {
@@ -1153,8 +1174,17 @@ async function connectMetaMask() {
     notify('ok', `Đã kết nối ${WEB3.address.slice(0, 6)}…${WEB3.address.slice(-4)} tới hợp đồng ${address.slice(0, 6)}…${address.slice(-4)}.`);
     await refreshOnChainState();
   } catch (err) {
+    if (version !== WEB3.sessionVersion) return;
     WEB3.connected = false;
+    WEB3.provider = null;
+    WEB3.signer = null;
+    WEB3.contract = null;
+    WEB3.address = null;
+    WEB3.chainId = null;
     web3SetButtonsDisabled(true);
+    clearWeb3Stats();
+    if (document.body.dataset.mode === 'web3') setText('networkLabel', 'Chưa kết nối ví');
+    setText('web3ActionHint', 'Chỉ Sepolia hoặc local được phép thao tác. Chọn đúng mạng và kết nối lại.');
     setText('web3Status', `Kết nối thất bại: ${web3DecodeError(err)}`);
     notify('error', `Kết nối thất bại: ${web3DecodeError(err)}`);
   }
@@ -1165,8 +1195,8 @@ function web3RequireConnected() {
     notify('info', 'Đang có giao dịch chờ ký hoặc xác nhận. Vui lòng chờ hoàn tất.');
     return false;
   }
-  if (!WEB3.connected) {
-    notify('error', 'Dán địa chỉ hợp đồng rồi bấm Kết nối MetaMask trước đã.');
+  if (!WEB3.connected || !WEB3_DEMO_CHAIN_IDS.has(WEB3.chainId)) {
+    notify('error', 'Chọn Sepolia hoặc local, dán địa chỉ hợp đồng rồi kết nối MetaMask trước.');
     return false;
   }
   return true;
@@ -1181,7 +1211,11 @@ async function refreshOnChainState() {
   const address = WEB3.address;
   const provider = WEB3.provider;
   const contractAddress = WEB3.contractAddress;
+  const chainId = WEB3.chainId;
   try {
+    const actualChainId = Number((await provider.getNetwork()).chainId);
+    assertDemoChain(actualChainId);
+    if (actualChainId !== chainId) throw new Error('Mạng đã thay đổi. Kết nối lại hợp đồng.');
     const [pledged, goal, stateId, timeLeft, myPledge, count, creator, balance, contractBalance] = await Promise.all([
       c.pledged(), c.goal(), c.state(), c.timeLeft(),
       c.pledgedAmount(address), c.contributorCount(), c.creator(),
@@ -1249,12 +1283,19 @@ async function submitWeb3Transaction(btnId, label, send) {
   const address = WEB3.address;
   const chainId = WEB3.chainId;
   const target = WEB3.contractAddress;
+  const provider = WEB3.provider;
+  const version = WEB3.sessionVersion;
   const short = value => `${value.slice(0, 6)}…${value.slice(-4)}`;
   const context = `<strong>${escapeHtml(label)}</strong><span class="tx-context">Ví ${escapeHtml(short(address))} · HĐ ${escapeHtml(short(target))} · ${escapeHtml(WEB3_CHAIN_NAMES[chainId] || 'Chain ' + chainId)}</span>`;
   setTxLoading(btnId, true, 'Đang chờ ký…');
   const entry = web3Log(`${context}<p>Đang chờ xác nhận trên MetaMask…</p>`);
   let txLink = '';
   try {
+    const actualChainId = Number((await provider.getNetwork()).chainId);
+    assertDemoChain(actualChainId);
+    if (actualChainId !== chainId || version !== WEB3.sessionVersion) {
+      throw new Error('Ví hoặc mạng đã thay đổi trước khi gửi. Kiểm tra và thử lại.');
+    }
     const tx = await send(contract, address);
     txLink = formatTxLink(tx.hash, chainId);
     web3Log(`${context}<p>Đã gửi · Đang chờ xác nhận khối. ${txLink}</p>`, entry);
