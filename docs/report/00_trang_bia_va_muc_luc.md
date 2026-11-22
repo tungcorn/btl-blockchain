@@ -37,7 +37,7 @@
 
 ## MỤC LỤC QUYỂN BÁO CÁO
 
-Quyển báo cáo được chia thành 4 phần độc lập theo đúng quy chuẩn đề cương môn học:
+Bản thảo đề xuất bố cục 4 phần dưới đây; nhóm cần đối chiếu đề cương/rubric thực tế trước khi chốt bản nộp:
 
 * [**PHẦN 1: ĐẶT VẤN ĐỀ**](01_dat_van_de.md)
   * 1.1. Bối cảnh gọi vốn cộng đồng (Crowdfunding)

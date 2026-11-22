@@ -266,7 +266,7 @@ npm run simulate
 ```bash
 # Mở trực tiếp bằng trình duyệt file: demo/index.html
 # Hoặc khởi chạy local server:
-npx serve demo
+npm run serve  # http://127.0.0.1:3000; dùng bản serve đã khóa trong lockfile
 ```
 
 ### 4.3. Triển khai lên Mạng Testnet Sepolia qua Remix IDE

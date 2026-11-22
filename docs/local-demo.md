@@ -54,6 +54,8 @@ Script tạo **cặp campaign riêng**, chuẩn bị góp/rút cả hai trước
 
 File gồm compiler/settings, source SHA-256, deployment receipts, hash/status/block/gasUsed và snapshot state trước/sau. Script assert partial unpledge, balance/accounting và kết quả quyết toán. GasUsed là quan sát cho lời gọi/cấu hình đó, không phải benchmark tiết kiệm gas.
 
+Hash trong JSON là hash byte nguồn của lần chạy đã lưu, không được thay để khớp một checkout mới. Git trên Windows có thể đổi LF thành CRLF và làm raw SHA-256 khác dù nội dung dòng không đổi; đối chiếu bản nguồn Git/LF của lần chạy để xác định khác biệt. Việc khớp nội dung sau chuẩn hóa xuống dòng không chứng minh bytecode/metadata của một lần compile mới giống hệt.
+
 **Chú ý:** script tăng thời gian toàn node, khiến campaign thủ công trên cùng node có thể hết hạn. Chạy thu evidence trước, rồi `npm run demo:deploy` để chuẩn bị cặp thủ công mới. Những campaign trong evidence đã quyết toán, không dùng lại để bấm demo.
 
 ## 5. Tuổi thọ và sự cố
@@ -61,5 +63,16 @@ File gồm compiler/settings, source SHA-256, deployment receipts, hash/status/b
 - Restart/reset node xóa state; địa chỉ có thể được tái sử dụng nhưng receipt của lần chạy cũ không thuộc chain local mới. Tạo lại campaign, đối chiếu deployment receipt mới và kết nối lại.
 - Kết thúc bằng Ctrl+C ở terminal node. JSON đã lưu chỉ là bằng chứng lưu trữ, không phải cam kết RPC còn phục vụ.
 - Nếu ví giữ nonce cũ sau reset, kiểm tra lịch sử/nonce mạng test trong profile thử nghiệm; không tự gửi lặp lại hoặc sửa ví chính.
-- Trang dùng CDN cho Ethers/font; không khẳng định offline hoàn toàn. Mạng lỗi thì dùng Hardhat test và JSON đã lưu, nói rõ mức bằng chứng.
+- Ethers 6.17.0/font đã lưu kèm trong `demo/vendor/`, có license và manifest SHA-256; dựng lại bằng `npm run demo:assets` sau `npm ci`. Sandbox không cần Internet lúc chạy; cài dependency/trình duyệt ban đầu và RPC Sepolia vẫn cần mạng. Local RPC phải còn chạy nếu dùng ví local. Mạng/ví lỗi thì dùng Hardhat test và JSON đã lưu, nói rõ mức bằng chứng.
+- Connector chỉ mở thao tác trên chain 11155111 / 31337 / 1337. Nếu từ chối chuyển mạng hoặc ví vẫn ở Mainnet/mạng khác, kết nối không được mở; chọn đúng mạng rồi thử lại.
 - Tình trạng hiện tại: script local đã được chạy; chưa xác nhận thao tác ký bằng MetaMask thật hoặc giao dịch Sepolia. Nhóm chỉ đánh dấu hoàn tất thủ công sau khi có bằng chứng riêng.
+
+## 6. Kiểm thử UI tái lập
+
+```bash
+npm ci
+npm run test:ui:install
+npm run test:ui
+```
+
+Bộ Playwright trong `tests/ui/` tự mở/dừng server loopback cổng 3000. Dừng server thủ công trước khi chạy; không tự dùng lại một server khác có thể đang phục vụ mã cũ. Linux sạch có thể cần `npx playwright install --with-deps chromium` để cài thư viện hệ điều hành. Test chặn tài nguyên Internet, dùng provider giả lập và không ký/gửi giao dịch thật. Kết quả/ảnh lỗi ở `test-results/`; không đưa ảnh dữ liệu giả lập vào báo cáo như bằng chứng on-chain.

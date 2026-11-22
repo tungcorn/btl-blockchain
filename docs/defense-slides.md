@@ -62,4 +62,4 @@ Mỗi người đi theo **quy tắc → quyết định thiết kế trong Solid
 - [Hướng dẫn chạy local](local-demo.md) và [phân công/vấn đáp, mục 1.6 diễn tập](group_report.md).
 - Mỗi người tự trình bày không đọc slide, giải thích code/test/bảng trước-sau, rồi dự đoán một ca đổi caller/amount/time. Hỏi nối luồng: TV1 — rút làm dưới goal thì sau hạn sao? TV2 — mapping còn sau claim sao không refund? TV3 — thiếu goal trước hạn sao chưa refund?
 - Ghi chỗ còn vướng và kết quả luyện lại; không đánh dấu đã sẵn sàng chỉ vì đã giao đủ ba phần. Rà chéo 1 → 2 → 3 → 1, không dồn mọi câu hỏi khó sang TV3.
-- Nếu RPC/ví lỗi: trình bày JSON/test đã lưu, dùng sandbox minh họa và nói rõ chuyển môi trường. Không khẳng định offline hoàn toàn khi trang còn dùng CDN.
+- Nếu RPC/ví lỗi: trình bày JSON/test đã lưu, dùng sandbox minh họa và nói rõ chuyển môi trường. Sandbox dùng Ethers/font local, không cần Internet lúc chạy; Sepolia vẫn cần RPC và local Web3 vẫn cần node/ví hoạt động.
