@@ -53,6 +53,8 @@ slither contracts/CrowdfundingFactory.sol --solc solc
 
 The recorded run uses Slither 0.11.6 and solc 0.8.20: **0 High/Medium**, 13 result instances for Crowdfunding and 16 for Factory including its dependency. There are four detector categories, not four findings; the runs overlap and must not be summed as independent issues. See [raw JSON, source hashes and triage](docs/security/slither-report.md). Static analysis is not an audit or a security guarantee.
 
+Node dependency security is tracked separately from Slither. On 2026-11-25, targeted updates reduced `npm audit` from **51 findings (1 Critical / 14 High)** to **38 (0 Critical / 2 High)**. Hardhat stays on **2.30.0**, Toolbox on **5.0.0**. Remaining test-runner/compiler-tooling risks are not declared harmless; see [dependency versions, scoped overrides and unresolved advisories](docs/security/dependency-triage.md). `npm audit` still exits nonzero.
+
 ### 4. Reproducible local EVM demo
 
 ```bash
