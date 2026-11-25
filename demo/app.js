@@ -571,6 +571,7 @@ function render() {
   setText('contractEscrowBalance', `${(appState.claimed ? 0 : appState.pledgedEth).toFixed(2)} ETH`);
 
   const mine = appState.contributions[wallet.address] || 0;
+  setText('sandboxWalletName', wallet.name);
   setText('myCurrentPledge', `${mine.toFixed(2)} ETH`);
   setText('activeWalletBalance', `${wallet.balance.toFixed(2)} ETH`);
 

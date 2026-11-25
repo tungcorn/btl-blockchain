@@ -94,12 +94,13 @@
       <!-- ─────────── CỘT TRÁI: SẢN PHẨM & TƯƠNG TÁC CHÍNH ─────────── -->
       <section class="primary-column">
 
-        <!-- THẺ HERO CHIẾN DỊCH (Clean Unified Campaign Hero) -->
+        <!-- Ba vùng: chiến dịch, ví đang thao tác, điều kiện quyết toán. -->
         <div class="campaign-hero-card">
+          <section class="campaign-overview" aria-labelledby="campaignTitle">
           <div class="hero-header-row">
             <div>
               <div class="campaign-subtag">Chiến dịch mô phỏng · Không sử dụng ETH thật</div>
-              <h1 class="campaign-title">Dự án Orbit</h1>
+              <h1 class="campaign-title" id="campaignTitle">Dự án Orbit</h1>
             </div>
             <div class="state-pill state-active" id="campaignStatusPill">
               <span class="status-dot" aria-hidden="true"></span>
@@ -109,16 +110,19 @@
 
           <!-- HERO PROGRESS COMPONENT — Thanh tiến độ chuẩn sản phẩm thực tế -->
           <div class="hero-progress-block">
-            <div class="progress-main-row">
-              <div class="progress-amount-group">
-                <span class="amount-current" id="goalCurrent">0.00 ETH</span>
-                <span class="amount-target">/ <span id="goalTarget">10.00 ETH</span> mục tiêu</span>
-              </div>
+            <div class="progress-label-row">
+              <div class="progress-label">Tổng góp ghi nhận</div>
               <div class="progress-badges">
                 <span class="cond-badge" id="condGoal">
                   <span class="cond-icon" aria-hidden="true"></span>
                   <span id="condGoalText">chưa thoả</span>
                 </span>
+              </div>
+            </div>
+            <div class="progress-main-row">
+              <div class="progress-amount-group">
+                <span class="amount-current" id="goalCurrent">0.00 ETH</span>
+                <span class="amount-target">/ <span id="goalTarget">10.00 ETH</span> mục tiêu</span>
               </div>
             </div>
 
@@ -143,39 +147,40 @@
             </div>
           </div>
 
-          <!-- DẢI 4 SỐ LIỆU TỔNG QUAN (Unified Segmented Metric Strip) -->
           <div class="metrics-strip">
             <div class="metric-cell">
               <span class="cell-label">Quỹ trong hợp đồng</span>
               <span class="cell-val" id="contractEscrowBalance">0.00 ETH</span>
             </div>
             <div class="metric-cell">
-              <span class="cell-label">Số người ủng hộ</span>
+              <span class="cell-label">Ví có khoản góp ghi nhận</span>
               <span class="cell-val" id="displayBackersCount">0</span>
             </div>
-            <div class="metric-cell">
-              <span class="cell-label">Khoản bạn đã góp</span>
-              <span class="cell-val" id="myCurrentPledge">0.00 ETH</span>
-            </div>
-            <div class="metric-cell">
-              <span class="cell-label">Số dư khả dụng</span>
-              <span class="cell-val" id="activeWalletBalance">12.50 ETH</span>
-            </div>
           </div>
-
-          <div class="claim-guards" aria-label="Điều kiện giải ngân cho ví đang chọn" aria-live="polite">
-            <div><span class="guard-label">Mục tiêu vốn</span><strong id="guardGoal">Chưa đạt</strong></div>
-            <div><span class="guard-label">Thời hạn</span><strong id="guardTime">Chưa hết hạn</strong></div>
-            <div><span class="guard-label">Quyền giải ngân</span><strong id="guardClaim">Chỉ chủ dự án</strong></div>
-          </div>
+          </section>
 
           <div class="action-cockpit">
-            <div class="action-pod pledge-pod">
+            <section class="action-pod pledge-pod" aria-labelledby="pledgeSectionTitle">
               <div class="pod-header">
-                <label class="pod-title" for="pledgeInput">Số ETH góp / rút trước hạn</label>
-                <span class="pod-sub" id="sandboxAmountHint">Bước 0.01 ETH chỉ áp dụng cho mô phỏng.</span>
+                <h2 class="pod-title" id="pledgeSectionTitle">Góp / rút trước hạn</h2>
+                <p class="wallet-context">Ví đang chọn: <strong id="sandboxWalletName">Alice</strong></p>
               </div>
 
+              <div class="wallet-metrics">
+                <div class="metric-cell">
+                  <span class="cell-label">Khoản bạn đã góp</span>
+                  <span class="cell-val" id="myCurrentPledge">0.00 ETH</span>
+                </div>
+                <div class="metric-cell">
+                  <span class="cell-label">Số dư ví</span>
+                  <span class="cell-val" id="activeWalletBalance">12.50 ETH</span>
+                </div>
+              </div>
+
+              <div class="amount-label-row">
+                <label for="pledgeInput">Số ETH</label>
+                <span id="sandboxAmountHint">Mô phỏng: bước 0.01 ETH.</span>
+              </div>
               <div class="pledge-input-row">
                 <div class="input-currency-wrapper">
                   <input type="number" id="pledgeInput" min="0.01" step="0.01" value="1.0"
@@ -198,17 +203,20 @@
                     <path d="M12 19V5M5 12l7-7 7 7"/>
                   </svg>
                 </button>
+                <button id="btnUnpledge" class="btn btn-secondary" onclick="handleUnpledge()" aria-describedby="unpledgeConditionHint">Rút số đã nhập</button>
               </div>
-              <div class="unpledge-action">
-                <button id="btnUnpledge" class="btn btn-text" onclick="handleUnpledge()" aria-describedby="unpledgeConditionHint">Rút số đã nhập</button>
-                <div class="condition-hint" id="unpledgeConditionHint">Bạn có thể rút lại tiền khi chiến dịch còn hạn.</div>
-              </div>
-            </div>
+              <div class="condition-hint" id="unpledgeConditionHint">Bạn có thể rút lại tiền khi chiến dịch còn hạn.</div>
+            </section>
 
-            <div class="action-pod settlement-pod">
+            <section class="action-pod settlement-pod" aria-labelledby="settlementSectionTitle">
               <div class="pod-header">
-                <span class="pod-title">Giải ngân &amp; hoàn tiền</span>
-                <span class="pod-sub">Khả dụng sau khi chiến dịch hết hạn</span>
+                <h2 class="pod-title" id="settlementSectionTitle">Điều kiện &amp; quyết toán</h2>
+              </div>
+
+              <div class="claim-guards" aria-label="Điều kiện giải ngân cho ví đang chọn" aria-live="polite">
+                <div><span class="guard-label">Mục tiêu vốn</span><strong id="guardGoal">Chưa đạt</strong></div>
+                <div><span class="guard-label">Thời hạn</span><strong id="guardTime">Chưa hết hạn</strong></div>
+                <div><span class="guard-label">Quyền giải ngân</span><strong id="guardClaim">Chỉ chủ dự án</strong></div>
               </div>
 
               <div class="settlement-stack">
@@ -221,10 +229,8 @@
                   <div class="condition-hint" id="refundConditionHint">Mỗi người tự nhận lại tiền nếu không đủ vốn.</div>
                 </div>
               </div>
-            </div>
+            </section>
           </div>
-
-
         </div>
 
       </section>
