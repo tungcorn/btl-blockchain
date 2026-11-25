@@ -53,6 +53,78 @@ test('local assets render both themes without CDN or horizontal overflow', async
   }
 });
 
+test('sandbox separates campaign figures, selected-wallet actions and settlement guards', async ({ page }) => {
+  const overview = page.locator('.campaign-overview');
+  const wallet = page.getByRole('region', { name: 'Góp / rút trước hạn', exact: true });
+  const settlement = page.getByRole('region', { name: 'Điều kiện & quyết toán', exact: true });
+  await expect(overview.locator('#contractEscrowBalance')).toBeVisible();
+  await expect(overview.locator('#displayBackersCount')).toBeVisible();
+  await expect(overview.locator('#myCurrentPledge')).toHaveCount(0);
+  await expect(wallet.locator('#myCurrentPledge')).toHaveText('0.00 ETH');
+  await expect(wallet.locator('#activeWalletBalance')).toHaveText('12.50 ETH');
+  await expect(wallet.locator('#sandboxWalletName')).toHaveText('Alice');
+  await expect(wallet.locator('#btnPledge')).toBeVisible();
+  await expect(wallet.locator('#btnUnpledge')).toBeVisible();
+  await expect(settlement.locator('.claim-guards')).toBeVisible();
+  await expect(settlement.locator('#btnClaim')).toBeDisabled();
+  await expect(settlement.locator('#btnRefund')).toBeDisabled();
+  await amount(page, '3', '#btnPledge');
+  await expect(wallet.locator('#myCurrentPledge')).toHaveText('3.00 ETH');
+  await page.selectOption('#walletSelect', 'bob');
+  await expect(wallet.locator('#sandboxWalletName')).toHaveText('Bob');
+  await expect(wallet.locator('#myCurrentPledge')).toHaveText('0.00 ETH');
+  await expect(overview.locator('#contractEscrowBalance')).toHaveText('3.00 ETH');
+  await page.selectOption('#walletSelect', 'alice');
+  await expect(wallet.locator('#sandboxWalletName')).toHaveText('Alice');
+  await expect(wallet.locator('#myCurrentPledge')).toHaveText('3.00 ETH');
+});
+
+test('desktop sandbox groups stay distinct without clipped labels or overlapping controls', async ({ page }, info) => {
+  for (const width of [1366, 1280]) {
+    await page.setViewportSize({ width, height: width === 1366 ? 768 : 720 });
+    for (const theme of ['dark', 'light']) {
+      if (await page.evaluate(() => document.documentElement.dataset.theme || 'dark') !== theme) {
+        await page.click('#btnThemeToggle');
+      }
+      expect(await page.evaluate(() => {
+        const overview = document.querySelector('.campaign-overview').getBoundingClientRect();
+        const wallet = document.querySelector('.pledge-pod').getBoundingClientRect();
+        const settlement = document.querySelector('.settlement-pod').getBoundingClientRect();
+        const groups = [...document.querySelectorAll('.action-pod')];
+        const labels = [...document.querySelectorAll('.primary-column .cell-label')];
+        return document.documentElement.scrollWidth <= innerWidth &&
+          overview.bottom <= wallet.top && overview.bottom <= settlement.top &&
+          wallet.right + 12 <= settlement.left &&
+          groups.every(group => group.scrollWidth <= group.clientWidth) &&
+          labels.every(label => label.scrollWidth <= label.clientWidth);
+      })).toBe(true);
+      if (width === 1366) {
+        expect(await page.evaluate(() => document.querySelector('.demo-remote-bar').getBoundingClientRect().bottom <= innerHeight)).toBe(true);
+      }
+      const screenshot = info.outputPath(`sandbox-groups-${width}-${theme}.png`);
+      await page.screenshot({ path: screenshot, fullPage: true });
+      await info.attach(`sandbox-groups-${width}-${theme}`, { path: screenshot, contentType: 'image/png' });
+      await page.click('.btn-scenario.success');
+      await page.locator('.toast-dismiss').click();
+      await page.locator('.toast').waitFor({ state: 'detached' });
+      await page.click('#timeJump7');
+      await page.selectOption('#walletSelect', 'creator');
+      await expect(page.locator('#btnClaim')).toBeEnabled();
+      expect(await page.evaluate(() => {
+        const target = document.querySelector('.amount-target');
+        const goalText = document.querySelector('#condGoalText');
+        return target.getClientRects().length === 1 && goalText.getClientRects().length === 1 &&
+          document.querySelector('.progress-label-row').getBoundingClientRect().height < 32;
+      })).toBe(true);
+      const funded = info.outputPath(`sandbox-claim-${width}-${theme}.png`);
+      await page.screenshot({ path: funded, fullPage: true });
+      await info.attach(`sandbox-claim-${width}-${theme}`, { path: funded, contentType: 'image/png' });
+      await page.click('.btn-scenario.reset');
+      await page.evaluate(() => window.scrollTo(0, 0));
+    }
+  }
+});
+
 test('partial/full sandbox withdrawal and state-aware empty ledger', async ({ page }) => {
   await expect(page.locator('.empty-title')).toHaveText('Chưa có khoản góp');
   await amount(page, '3', '#btnPledge');

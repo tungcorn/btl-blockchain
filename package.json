@@ -15,6 +15,7 @@
     "demo:evidence": "hardhat run scripts/record-local-evidence.js --network localhost",
     "demo:assets": "node scripts/prepare-demo-assets.js",
     "test:ui": "playwright test",
+    "test:ui:evm": "hardhat compile && playwright test --config playwright.evm.config.js",
     "test:ui:install": "playwright install chromium",
     "serve": "serve demo --listen tcp://127.0.0.1:3000"
   },
@@ -29,13 +30,23 @@
   ],
   "author": "Blockchain Engineering Team",
   "license": "MIT",
+  "overrides": {
+    "lodash": "4.18.1",
+    "ws@8.18.0": "8.21.0",
+    "ethjs-unit": {
+      "bn.js": "4.12.3"
+    },
+    "number-to-bn": {
+      "bn.js": "4.12.3"
+    }
+  },
   "devDependencies": {
     "@fontsource/be-vietnam-pro": "5.3.0",
     "@fontsource/jetbrains-mono": "5.3.0",
     "@nomicfoundation/hardhat-toolbox": "^5.0.0",
     "@playwright/test": "1.58.2",
     "ethers": "6.17.0",
-    "hardhat": "^2.29.1",
+    "hardhat": "2.30.0",
     "serve": "14.2.8"
   }
 }

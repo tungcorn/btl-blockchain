@@ -571,6 +571,7 @@ function render() {
   setText('contractEscrowBalance', `${(appState.claimed ? 0 : appState.pledgedEth).toFixed(2)} ETH`);
 
   const mine = appState.contributions[wallet.address] || 0;
+  setText('sandboxWalletName', wallet.name);
   setText('myCurrentPledge', `${mine.toFixed(2)} ETH`);
   setText('activeWalletBalance', `${wallet.balance.toFixed(2)} ETH`);
 
@@ -1052,6 +1053,13 @@ function clearWeb3Stats() {
   setText('w3WalletBalance', 'Số dư ví: —');
 }
 
+function createWeb3Provider() {
+  // Ethers caches identical reads for 250 ms by default. A fast local receipt
+  // can arrive inside that window, so the post-transaction refresh would reuse
+  // pre-transaction balances/calls. Keep fresh reads for every wallet session.
+  return new ethers.BrowserProvider(window.ethereum, undefined, { cacheTimeout: -1 });
+}
+
 async function handleWeb3AccountsChanged(accounts) {
   const version = ++WEB3.sessionVersion;
   WEB3.connected = false;
@@ -1070,7 +1078,7 @@ async function handleWeb3AccountsChanged(accounts) {
   }
   setText('web3Status', 'Đang cập nhật signer cho tài khoản mới…');
   try {
-    const provider = new ethers.BrowserProvider(window.ethereum);
+    const provider = createWeb3Provider();
     const chainId = Number((await provider.getNetwork()).chainId);
     assertDemoChain(chainId);
     if (chainId !== WEB3.chainId) throw new Error('Mạng đã thay đổi. Kết nối lại hợp đồng trên mạng đang chọn.');
@@ -1121,7 +1129,7 @@ async function connectMetaMask() {
     setText('web3NetworkBadge', 'Chưa kết nối');
     document.getElementById('web3NetworkBadge').removeAttribute('style');
     setText('web3Status', 'Đang kết nối MetaMask…');
-    let provider = new ethers.BrowserProvider(window.ethereum);
+    let provider = createWeb3Provider();
     await provider.send('eth_requestAccounts', []);
     let chainId = Number((await provider.getNetwork()).chainId);
     if (!WEB3_DEMO_CHAIN_IDS.has(chainId)) {
@@ -1135,7 +1143,7 @@ async function connectMetaMask() {
         throw new Error('Chưa chuyển sang mạng demo. Chọn Sepolia hoặc local trong MetaMask rồi kết nối lại; các thao tác vẫn bị khóa.');
       }
       // Provider mới tránh giữ network/cache cũ sau khi ví đổi chain.
-      provider = new ethers.BrowserProvider(window.ethereum);
+      provider = createWeb3Provider();
       chainId = Number((await provider.getNetwork()).chainId);
     }
     assertDemoChain(chainId);

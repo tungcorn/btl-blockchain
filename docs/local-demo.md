@@ -76,3 +76,19 @@ npm run test:ui
 ```
 
 Bộ Playwright trong `tests/ui/` tự mở/dừng server loopback cổng 3000. Dừng server thủ công trước khi chạy; không tự dùng lại một server khác có thể đang phục vụ mã cũ. Linux sạch có thể cần `npx playwright install --with-deps chromium` để cài thư viện hệ điều hành. Test chặn tài nguyên Internet, dùng provider giả lập và không ký/gửi giao dịch thật. Kết quả/ảnh lỗi ở `test-results/`; không đưa ảnh dữ liệu giả lập vào báo cáo như bằng chứng on-chain.
+
+## 7. Kiểm thử UI nối EVM thật trên node riêng
+
+Sau khi cài dependency và Chromium như mục 6:
+
+```bash
+npm run test:ui:evm
+```
+
+- Lệnh compile Solidity rồi chạy `tests/ui-evm/` bằng `playwright.evm.config.js`. Playwright tự mở/dừng **node 127.0.0.1:18545** và **web 127.0.0.1:13000**; nếu cổng bận thì báo lỗi, không dùng lại hoặc reset một node đang chạy. Không cần tắt demo thủ công trên cổng 3000/8545.
+- Browser dùng Ethers và giao diện thật. Adapter EIP-1193 chuyển lời gọi tới RPC node riêng; chỉ cho gửi giao dịch từ tài khoản test đang chọn tới các campaign do test triển khai. Không dùng `wallet-fixture.js`, không giả kết quả contract/receipt/balance, không ký bằng extension MetaMask.
+- Kiểm tra góp/rút một phần, từ chối rút quá mức, đủ vốn trước hạn vẫn Active, quyền creator, claim và refund. Sau giao dịch UI, so sánh số dư ví/hợp đồng và khoản góp với RPC **ngay sau automatic refresh**, không bấm Làm mới hoặc retry số hiển thị để che số dư cũ. Việc refresh sau khi test tua thời gian là cập nhật từ một thay đổi ngoài UI, không phải chữa lỗi sau giao dịch.
+- Regression cache giữ engine Ethers thật nhưng kéo dài cửa sổ cache mặc định trong một test để tái hiện ổn định trên máy chậm; cấu hình rõ ràng của app vẫn được ưu tiên. Test cập nhật EVM thật rồi đọc lại một lần, phải thấy số dư mới.
+- Connector tắt cache đọc 250 ms mặc định bằng `cacheTimeout: -1` khi tạo BrowserProvider, kể cả sau đổi tài khoản/chuyển mạng. Đổi lại là nhiều lời gọi RPC hơn trong demo nhỏ. Không thêm sleep/retry, không bỏ kiểm tra chain/session; không khẳng định RPC phía ngoài luôn đồng bộ hay mọi trường đều thuộc một block snapshot nguyên tử.
+- Test tua thời gian **chỉ node riêng 18545** để quyết toán. Không áp dụng cho Sepolia và không ảnh hưởng timestamp campaign thủ công trên 8545.
+- Receipt JSON, ảnh và trace lỗi nằm trong `test-results/ui-evm/` (Git bỏ qua); Playwright attach các file vào kết quả test. Mỗi lần chạy dùng deployment/receipt mới trên chain local tạm thời; địa chỉ có thể lặp lại giữa các lần chạy. Không gọi đây là bằng chứng MetaMask ký thật, Sepolia broadcast hoặc kiểm toán bảo mật.

@@ -433,13 +433,30 @@ body {
   margin-bottom: 20px;
 }
 
+.campaign-overview {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 180px;
+  column-gap: 24px;
+}
+
+.campaign-overview .hero-header-row {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 640px) {
+  .campaign-overview {
+    grid-template-columns: 1fr;
+    row-gap: 12px;
+  }
+}
+
 /* --- HERO PROGRESS BLOCK --- */
 /* --- HERO PROGRESS BLOCK (SEAMLESS INTEGRATION — NO BOX-IN-A-BOX) --- */
 .hero-progress-block {
   background: transparent;
   border: none;
   padding: 0;
-  margin-bottom: 22px;
+  margin-bottom: 0;
 }
 
 .progress-main-row {
@@ -646,25 +663,29 @@ body {
 
 .claim-guards {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 16px;
+  gap: 8px;
   padding-bottom: 12px;
   margin-bottom: 12px;
   border-bottom: 1px solid var(--border-hairline);
 }
 
+.claim-guards > div {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  align-items: baseline;
+  gap: 8px;
+}
+
 .guard-label {
-  display: block;
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   color: var(--text-muted);
-  margin-bottom: 4px;
 }
 
 .claim-guards strong {
-  display: block;
   font-size: 0.875rem;
   font-weight: 600;
   color: var(--text-main);
+  text-align: right;
 }
 
 .claim-guards .is-met {
@@ -688,20 +709,96 @@ body {
   font-size: 0.8125rem;
 }
 
-/* --- METRICS STRIP (UNIFIED CONTINUOUS INSTRUMENT BAR) --- */
-.metrics-strip {
+/* Campaign figures stay in the overview; wallet figures stay beside the input. */
+.progress-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+
+.progress-label-row .cond-badge {
+  white-space: nowrap;
+}
+
+.progress-label {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.metrics-strip,
+.wallet-metrics {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  padding: 16px 0;
-  margin-bottom: 20px;
-  border-top: 1px solid var(--border-hairline);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.metrics-strip {
+  grid-template-columns: 1fr;
+  align-content: center;
+  gap: 12px;
+  padding-left: 20px;
+  border-left: 1px solid var(--border-hairline);
+}
+
+.metrics-strip .metric-cell {
+  padding: 0;
+  border: 0;
+}
+
+.metrics-strip .cell-label {
+  white-space: normal;
+  overflow: visible;
+}
+
+@media (max-width: 640px) {
+  .metrics-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    padding: 12px 0 0;
+    border-left: 0;
+    border-top: 1px solid var(--border-hairline);
+  }
+}
+
+.wallet-metrics {
+  padding-bottom: 12px;
+  margin-bottom: 12px;
   border-bottom: 1px solid var(--border-hairline);
 }
 
-@media (max-width: 768px) {
-  .metrics-strip {
-    grid-template-columns: repeat(2, 1fr);
-  }
+.wallet-metrics .cell-val {
+  font-size: 1.125rem;
+}
+
+.wallet-context {
+  margin-top: 3px;
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+}
+
+.wallet-context strong {
+  color: var(--text-main);
+}
+
+.amount-label-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  margin-bottom: 6px;
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+}
+
+.amount-label-row label {
+  color: var(--text-main);
+  font-weight: 500;
+}
+
+#sandboxAmountHint {
+  font-size: 0.75rem;
 }
 
 .metric-cell {
@@ -719,16 +816,6 @@ body {
 .metric-cell:last-child {
   padding-right: 0;
   border-right: none;
-}
-
-@media (max-width: 768px) {
-  .metric-cell:nth-child(2) {
-    border-right: none;
-  }
-  .metric-cell:nth-child(1),
-  .metric-cell:nth-child(2) {
-    border-bottom: 1px solid var(--border-hairline);
-  }
 }
 
 .cell-label {
@@ -759,8 +846,9 @@ body {
 /* --- ACTION COCKPIT --- */
 .action-cockpit {
   display: grid;
-  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
-  gap: 24px;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+  gap: 16px;
+  margin-top: 20px;
 }
 
 @media (max-width: 640px) {
@@ -773,16 +861,14 @@ body {
   min-width: 0;
   display: flex;
   flex-direction: column;
-}
-
-.settlement-pod {
-  border-left: 1px solid var(--border-hairline);
-  padding-left: 24px;
+  padding: 16px;
+  background: var(--bg-subtle);
+  border-radius: var(--radius-md);
 }
 
 .campaign-hero-card[data-state="Successful"] .settlement-pod,
 .campaign-hero-card[data-state="Failed"] .settlement-pod {
-  border-left-color: var(--color-primary);
+  box-shadow: inset 0 3px 0 var(--color-primary);
 }
 
 .pod-header {
@@ -896,32 +982,14 @@ body {
   gap: 8px;
 }
 
-.unpledge-action {
-  display: flex;
-  align-items: center;
-  gap: 12px;
+.pod-btn-group .btn {
+  flex: 1;
+  padding-inline: 8px;
+}
+
+.pledge-pod > .condition-hint {
   margin-top: 8px;
-}
-
-.unpledge-action .btn-text {
-  flex-shrink: 0;
-}
-
-.btn.btn-text {
-  min-height: 32px;
-  padding: 4px 0;
-  background: transparent;
-  color: var(--color-primary);
-  justify-content: flex-start;
-}
-
-.btn-text:disabled {
-  color: var(--text-subtle);
-  opacity: 0.6;
-}
-
-.unpledge-action .condition-hint {
-  margin-top: 0;
+  font-size: 0.8125rem;
 }
 
 .btn {
@@ -2118,15 +2186,14 @@ input:focus-visible,
   .campaign-desc {
     margin-bottom: 12px;
   }
-  .hero-progress-block {
-    margin-bottom: 12px;
-  }
   .amount-current {
     font-size: 2.75rem;
   }
-  .metrics-strip {
-    padding: 12px 0;
-    margin-bottom: 12px;
+  .action-cockpit {
+    margin-top: 16px;
+  }
+  .action-pod {
+    padding: 14px;
   }
   .pod-header {
     margin-bottom: 8px;
