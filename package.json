@@ -15,6 +15,7 @@
     "demo:evidence": "hardhat run scripts/record-local-evidence.js --network localhost",
     "demo:assets": "node scripts/prepare-demo-assets.js",
     "test:ui": "playwright test",
+    "test:ui:evm": "hardhat compile && playwright test --config playwright.evm.config.js",
     "test:ui:install": "playwright install chromium",
     "serve": "serve demo --listen tcp://127.0.0.1:3000"
   },

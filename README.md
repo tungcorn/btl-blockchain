@@ -42,6 +42,14 @@ npm run test:ui
 
 Playwright starts/stops its own loopback server on port 3000; stop any manual demo server first. Tests in `tests/ui/` block external resource requests and exercise the actual UI, including network rejection, partial withdrawals, permissions, balance/accounting, RPC failure, pending locks and disconnect races. Wallet/provider contracts are controlled mocks, not MetaMask signatures or EVM receipts. Screenshots/traces are local test artifacts, not genuine on-chain evidence.
 
+For browser-to-real-EVM integration (separate from the mocked-provider suite):
+
+```bash
+npm run test:ui:evm
+```
+
+This compiles Solidity and launches its own loopback Hardhat node on **18545** and demo server on **13000**, refusing to reuse occupied ports. It does not connect to/reset the manual demo node on 8545. Tests execute real pledge/unpledge/claim/refund transactions, compare automatically refreshed wallet/contract balances against RPC, and cover cached reads plus account switching/reconnection. They advance only their isolated node's time. A longer real Ethers cache window makes the cache regression reproducible; no contract results are mocked. Local receipts/screenshots are saved under `test-results/ui-evm/`; public unlocked test accounts are used, **not MetaMask signatures**. See [setup and evidence limits](docs/local-demo.md#7-kiểm-thử-ui-nối-evm-thật-trên-node-riêng).
+
 ### 3. Static analysis
 
 ```bash
