@@ -21,7 +21,7 @@
 | STT | Họ và tên sinh viên | Mã số sinh viên | Chủ đề bảo vệ chính |
 | :---: | :--- | :---: | :--- |
 | **1** | [Điền tên Thành viên 1] | [MSSV 1] | **Góp vốn và quyền rút trước hạn**: vì sao cần khoản cá nhân và tổng khoản góp; `pledge`/`unpledge` cập nhật nhất quán, quyền caller và rollback. Có code, test và bảng trước/sau; không chỉ giải thích cú pháp. |
-| **2** | [Điền tên Thành viên 2] | [MSSV 2] | **Điều kiện giải ngân thành công**: đủ goal chưa đủ; cần hết hạn, đúng creator và chưa claim. Giải thích trạng thái, `claim`, balance/accounting trước-sau. Factory và chi tiết Web3 để hỏi sâu. |
+| **2** | Ngô Quang Tùng | [MSSV 2] | **Điều kiện giải ngân thành công**: đủ goal chưa đủ; cần hết hạn, đúng creator và chưa claim. Giải thích trạng thái, `claim`, balance/accounting trước-sau. Factory và chi tiết Web3 để hỏi sâu. |
 | **3** | [Điền tên Thành viên 3] | [MSSV 3] | **Hoàn tiền khi thất bại và chống hoàn sai**: refund theo caller, đúng khoản, không hoàn hai lần; CEI/guard và rollback trong luồng refund. Không đại diện toàn bộ bảo mật của nhóm; minh chứng nâng cao để hỏi sâu. |
 
 <br>
